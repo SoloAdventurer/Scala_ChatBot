@@ -1,0 +1,645 @@
+{
+    "version": "1.4.0",
+    "project": {
+        "name": "chatbot-project",
+        "directory": "D:\\chatbot-project",
+        "workspaceDir": "D:\\chatbot-project",
+        "sources": [
+            "D:\\chatbot-project\\src\\main\\scala",
+            "D:\\chatbot-project\\src\\main\\scala-3",
+            "D:\\chatbot-project\\src\\main\\java",
+            "D:\\chatbot-project\\target\\scala-3.6.1\\src_managed\\main"
+        ],
+        "dependencies": [
+            
+        ],
+        "classpath": [
+            "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\org\\scala-lang\\scala3-library_3\\3.6.1\\scala3-library_3-3.6.1.jar",
+            "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\org\\scala-lang\\modules\\scala-parser-combinators_3\\2.4.0\\scala-parser-combinators_3-2.4.0.jar",
+            "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\org\\jsoup\\jsoup\\1.18.1\\jsoup-1.18.1.jar",
+            "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\typesafe\\akka\\akka-http_3\\10.5.3\\akka-http_3-10.5.3.jar",
+            "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\typesafe\\akka\\akka-http-core_3\\10.5.3\\akka-http-core_3-10.5.3.jar",
+            "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\typesafe\\akka\\akka-actor-typed_3\\2.8.5\\akka-actor-typed_3-2.8.5.jar",
+            "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\typesafe\\akka\\akka-stream_3\\2.6.20\\akka-stream_3-2.6.20.jar",
+            "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\lihaoyi\\upickle_3\\4.0.0\\upickle_3-4.0.0.jar",
+            "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\typesafe\\config\\1.4.3\\config-1.4.3.jar",
+            "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\github\\tototoshi\\scala-csv_3\\1.3.10\\scala-csv_3-1.3.10.jar",
+            "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\org\\scala-lang\\scala-library\\2.13.15\\scala-library-2.13.15.jar",
+            "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\typesafe\\akka\\akka-parsing_3\\10.5.3\\akka-parsing_3-10.5.3.jar",
+            "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\typesafe\\akka\\akka-actor_3\\2.8.5\\akka-actor_3-2.8.5.jar",
+            "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\typesafe\\akka\\akka-slf4j_3\\2.8.5\\akka-slf4j_3-2.8.5.jar",
+            "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\org\\slf4j\\slf4j-api\\1.7.36\\slf4j-api-1.7.36.jar",
+            "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\typesafe\\akka\\akka-protobuf-v3_3\\2.6.20\\akka-protobuf-v3_3-2.6.20.jar",
+            "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\org\\reactivestreams\\reactive-streams\\1.0.3\\reactive-streams-1.0.3.jar",
+            "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\typesafe\\ssl-config-core_3\\0.6.1\\ssl-config-core_3-0.6.1.jar",
+            "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\lihaoyi\\ujson_3\\4.0.0\\ujson_3-4.0.0.jar",
+            "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\lihaoyi\\upack_3\\4.0.0\\upack_3-4.0.0.jar",
+            "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\lihaoyi\\upickle-implicits_3\\4.0.0\\upickle-implicits_3-4.0.0.jar",
+            "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\org\\scala-lang\\modules\\scala-java8-compat_3\\1.0.0\\scala-java8-compat_3-1.0.0.jar",
+            "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\lihaoyi\\upickle-core_3\\4.0.0\\upickle-core_3-4.0.0.jar",
+            "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\lihaoyi\\geny_3\\1.1.1\\geny_3-1.1.1.jar"
+        ],
+        "out": "D:\\chatbot-project\\.bloop\\chatbot-project",
+        "classesDir": "D:\\chatbot-project\\.bloop\\chatbot-project\\scala-3\\classes",
+        "resources": [
+            "D:\\chatbot-project\\src\\main\\resources",
+            "D:\\chatbot-project\\target\\scala-3.6.1\\resource_managed\\main"
+        ],
+        "scala": {
+            "organization": "org.scala-lang",
+            "name": "scala-compiler",
+            "version": "3.6.1",
+            "options": [
+                
+            ],
+            "jars": [
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\org\\scala-lang\\scala3-library_3\\3.6.1\\scala3-library_3-3.6.1.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\org\\scala-lang\\scala-library\\2.13.15\\scala-library-2.13.15.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\org\\scala-lang\\scala3-compiler_3\\3.6.1\\scala3-compiler_3-3.6.1.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\org\\scala-lang\\scala3-interfaces\\3.6.1\\scala3-interfaces-3.6.1.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\org\\scala-lang\\tasty-core_3\\3.6.1\\tasty-core_3-3.6.1.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\org\\scala-lang\\modules\\scala-asm\\9.7.0-scala-2\\scala-asm-9.7.0-scala-2.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\org\\scala-sbt\\compiler-interface\\1.9.6\\compiler-interface-1.9.6.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\org\\jline\\jline-reader\\3.27.0\\jline-reader-3.27.0.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\org\\jline\\jline-terminal\\3.27.0\\jline-terminal-3.27.0.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\org\\jline\\jline-terminal-jna\\3.27.0\\jline-terminal-jna-3.27.0.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\org\\scala-sbt\\util-interface\\1.9.8\\util-interface-1.9.8.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\org\\jline\\jline-native\\3.27.0\\jline-native-3.27.0.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\net\\java\\dev\\jna\\jna\\5.15.0\\jna-5.15.0.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\org\\scala-lang\\scaladoc_3\\3.6.1\\scaladoc_3-3.6.1.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\org\\scala-lang\\scala3-tasty-inspector_3\\3.6.1\\scala3-tasty-inspector_3-3.6.1.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\vladsch\\flexmark\\flexmark\\0.62.2\\flexmark-0.62.2.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\vladsch\\flexmark\\flexmark-util-ast\\0.62.2\\flexmark-util-ast-0.62.2.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\vladsch\\flexmark\\flexmark-util-data\\0.62.2\\flexmark-util-data-0.62.2.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\vladsch\\flexmark\\flexmark-util-html\\0.62.2\\flexmark-util-html-0.62.2.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\vladsch\\flexmark\\flexmark-ext-anchorlink\\0.62.2\\flexmark-ext-anchorlink-0.62.2.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\vladsch\\flexmark\\flexmark-ext-autolink\\0.62.2\\flexmark-ext-autolink-0.62.2.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\vladsch\\flexmark\\flexmark-ext-emoji\\0.62.2\\flexmark-ext-emoji-0.62.2.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\vladsch\\flexmark\\flexmark-ext-gfm-strikethrough\\0.62.2\\flexmark-ext-gfm-strikethrough-0.62.2.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\vladsch\\flexmark\\flexmark-ext-gfm-tasklist\\0.62.2\\flexmark-ext-gfm-tasklist-0.62.2.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\vladsch\\flexmark\\flexmark-ext-wikilink\\0.62.2\\flexmark-ext-wikilink-0.62.2.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\vladsch\\flexmark\\flexmark-ext-tables\\0.62.2\\flexmark-ext-tables-0.62.2.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\vladsch\\flexmark\\flexmark-ext-yaml-front-matter\\0.62.2\\flexmark-ext-yaml-front-matter-0.62.2.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\nl\\big-o\\liqp\\0.8.2\\liqp-0.8.2.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\org\\jsoup\\jsoup\\1.17.2\\jsoup-1.17.2.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\fasterxml\\jackson\\dataformat\\jackson-dataformat-yaml\\2.15.1\\jackson-dataformat-yaml-2.15.1.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\vladsch\\flexmark\\flexmark-util-builder\\0.62.2\\flexmark-util-builder-0.62.2.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\vladsch\\flexmark\\flexmark-util-collection\\0.62.2\\flexmark-util-collection-0.62.2.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\vladsch\\flexmark\\flexmark-util-dependency\\0.62.2\\flexmark-util-dependency-0.62.2.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\vladsch\\flexmark\\flexmark-util-format\\0.62.2\\flexmark-util-format-0.62.2.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\vladsch\\flexmark\\flexmark-util-misc\\0.62.2\\flexmark-util-misc-0.62.2.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\vladsch\\flexmark\\flexmark-util-sequence\\0.62.2\\flexmark-util-sequence-0.62.2.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\vladsch\\flexmark\\flexmark-util-visitor\\0.62.2\\flexmark-util-visitor-0.62.2.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\org\\jetbrains\\annotations\\15.0\\annotations-15.0.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\vladsch\\flexmark\\flexmark-util\\0.62.2\\flexmark-util-0.62.2.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\org\\nibor\\autolink\\autolink\\0.6.0\\autolink-0.6.0.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\vladsch\\flexmark\\flexmark-jira-converter\\0.62.2\\flexmark-jira-converter-0.62.2.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\org\\antlr\\antlr4-runtime\\4.7.2\\antlr4-runtime-4.7.2.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\fasterxml\\jackson\\core\\jackson-annotations\\2.15.1\\jackson-annotations-2.15.1.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\fasterxml\\jackson\\core\\jackson-core\\2.15.1\\jackson-core-2.15.1.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\fasterxml\\jackson\\core\\jackson-databind\\2.15.1\\jackson-databind-2.15.1.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\fasterxml\\jackson\\datatype\\jackson-datatype-jsr310\\2.12.1\\jackson-datatype-jsr310-2.12.1.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\ua\\co\\k\\strftime4j\\1.0.5\\strftime4j-1.0.5.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\org\\yaml\\snakeyaml\\2.0\\snakeyaml-2.0.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\vladsch\\flexmark\\flexmark-util-options\\0.62.2\\flexmark-util-options-0.62.2.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\vladsch\\flexmark\\flexmark-ext-ins\\0.62.2\\flexmark-ext-ins-0.62.2.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\vladsch\\flexmark\\flexmark-ext-superscript\\0.62.2\\flexmark-ext-superscript-0.62.2.jar"
+            ],
+            "setup": {
+                "order": "mixed",
+                "addLibraryToBootClasspath": false,
+                "addCompilerToClasspath": false,
+                "addExtraJarsToClasspath": false,
+                "manageBootClasspath": false,
+                "filterLibraryFromClasspath": false
+            },
+            "bridgeJars": [
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\org\\scala-lang\\scala3-sbt-bridge\\3.6.1\\scala3-sbt-bridge-3.6.1.jar"
+            ]
+        },
+        "java": {
+            "options": [
+                
+            ]
+        },
+        "test": {
+            "frameworks": [
+                {
+                    "names": [
+                        "org.scalacheck.ScalaCheckFramework"
+                    ]
+                },
+                {
+                    "names": [
+                        "org.specs2.runner.Specs2Framework",
+                        "org.specs2.runner.SpecsFramework"
+                    ]
+                },
+                {
+                    "names": [
+                        "org.specs.runner.SpecsFramework"
+                    ]
+                },
+                {
+                    "names": [
+                        "org.scalatest.tools.Framework",
+                        "org.scalatest.tools.ScalaTestFramework"
+                    ]
+                },
+                {
+                    "names": [
+                        "com.novocode.junit.JUnitFramework"
+                    ]
+                },
+                {
+                    "names": [
+                        "munit.Framework"
+                    ]
+                },
+                {
+                    "names": [
+                        "zio.test.sbt.ZTestFramework"
+                    ]
+                },
+                {
+                    "names": [
+                        "weaver.framework.CatsEffect"
+                    ]
+                },
+                {
+                    "names": [
+                        "hedgehog.sbt.Framework"
+                    ]
+                }
+            ],
+            "options": {
+                "excludes": [
+                    
+                ],
+                "arguments": [
+                    
+                ]
+            }
+        },
+        "platform": {
+            "name": "jvm",
+            "config": {
+                "home": "C:\\Program Files\\Eclipse Adoptium\\jdk-21.0.6.7-hotspot",
+                "options": [
+                    "-Duser.dir=D:\\chatbot-project"
+                ]
+            },
+            "mainClass": [
+                
+            ],
+            "runtimeConfig": {
+                "home": "C:\\Program Files\\Eclipse Adoptium\\jdk-21.0.6.7-hotspot",
+                "options": [
+                    "-Duser.dir=D:\\chatbot-project"
+                ]
+            },
+            "classpath": [
+                "D:\\chatbot-project\\.bloop\\chatbot-project\\scala-3\\classes",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\org\\scala-lang\\scala3-library_3\\3.6.1\\scala3-library_3-3.6.1.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\org\\scala-lang\\modules\\scala-parser-combinators_3\\2.4.0\\scala-parser-combinators_3-2.4.0.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\org\\jsoup\\jsoup\\1.18.1\\jsoup-1.18.1.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\typesafe\\akka\\akka-http_3\\10.5.3\\akka-http_3-10.5.3.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\typesafe\\akka\\akka-http-core_3\\10.5.3\\akka-http-core_3-10.5.3.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\typesafe\\akka\\akka-actor-typed_3\\2.8.5\\akka-actor-typed_3-2.8.5.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\typesafe\\akka\\akka-stream_3\\2.6.20\\akka-stream_3-2.6.20.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\lihaoyi\\upickle_3\\4.0.0\\upickle_3-4.0.0.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\typesafe\\config\\1.4.3\\config-1.4.3.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\github\\tototoshi\\scala-csv_3\\1.3.10\\scala-csv_3-1.3.10.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\org\\scala-lang\\scala-library\\2.13.15\\scala-library-2.13.15.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\typesafe\\akka\\akka-parsing_3\\10.5.3\\akka-parsing_3-10.5.3.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\typesafe\\akka\\akka-actor_3\\2.8.5\\akka-actor_3-2.8.5.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\typesafe\\akka\\akka-slf4j_3\\2.8.5\\akka-slf4j_3-2.8.5.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\org\\slf4j\\slf4j-api\\1.7.36\\slf4j-api-1.7.36.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\typesafe\\akka\\akka-protobuf-v3_3\\2.6.20\\akka-protobuf-v3_3-2.6.20.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\org\\reactivestreams\\reactive-streams\\1.0.3\\reactive-streams-1.0.3.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\typesafe\\ssl-config-core_3\\0.6.1\\ssl-config-core_3-0.6.1.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\lihaoyi\\ujson_3\\4.0.0\\ujson_3-4.0.0.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\lihaoyi\\upack_3\\4.0.0\\upack_3-4.0.0.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\lihaoyi\\upickle-implicits_3\\4.0.0\\upickle-implicits_3-4.0.0.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\org\\scala-lang\\modules\\scala-java8-compat_3\\1.0.0\\scala-java8-compat_3-1.0.0.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\lihaoyi\\upickle-core_3\\4.0.0\\upickle-core_3-4.0.0.jar",
+                "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\lihaoyi\\geny_3\\1.1.1\\geny_3-1.1.1.jar"
+            ]
+        },
+        "resolution": {
+            "modules": [
+                {
+                    "organization": "org.scala-lang",
+                    "name": "scala3-library_3",
+                    "version": "3.6.1",
+                    "configurations": "default",
+                    "artifacts": [
+                        {
+                            "name": "scala3-library_3",
+                            "path": "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\org\\scala-lang\\scala3-library_3\\3.6.1\\scala3-library_3-3.6.1.jar"
+                        },
+                        {
+                            "name": "scala3-library_3",
+                            "classifier": "sources",
+                            "path": "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\org\\scala-lang\\scala3-library_3\\3.6.1\\scala3-library_3-3.6.1-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "org.scala-lang.modules",
+                    "name": "scala-parser-combinators_3",
+                    "version": "2.4.0",
+                    "configurations": "default",
+                    "artifacts": [
+                        {
+                            "name": "scala-parser-combinators_3",
+                            "path": "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\org\\scala-lang\\modules\\scala-parser-combinators_3\\2.4.0\\scala-parser-combinators_3-2.4.0.jar"
+                        },
+                        {
+                            "name": "scala-parser-combinators_3",
+                            "classifier": "sources",
+                            "path": "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\org\\scala-lang\\modules\\scala-parser-combinators_3\\2.4.0\\scala-parser-combinators_3-2.4.0-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "org.jsoup",
+                    "name": "jsoup",
+                    "version": "1.18.1",
+                    "configurations": "default",
+                    "artifacts": [
+                        {
+                            "name": "jsoup",
+                            "path": "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\org\\jsoup\\jsoup\\1.18.1\\jsoup-1.18.1.jar"
+                        },
+                        {
+                            "name": "jsoup",
+                            "classifier": "sources",
+                            "path": "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\org\\jsoup\\jsoup\\1.18.1\\jsoup-1.18.1-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "com.typesafe.akka",
+                    "name": "akka-http_3",
+                    "version": "10.5.3",
+                    "configurations": "default",
+                    "artifacts": [
+                        {
+                            "name": "akka-http_3",
+                            "path": "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\typesafe\\akka\\akka-http_3\\10.5.3\\akka-http_3-10.5.3.jar"
+                        },
+                        {
+                            "name": "akka-http_3",
+                            "classifier": "sources",
+                            "path": "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\typesafe\\akka\\akka-http_3\\10.5.3\\akka-http_3-10.5.3-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "com.typesafe.akka",
+                    "name": "akka-http-core_3",
+                    "version": "10.5.3",
+                    "configurations": "default",
+                    "artifacts": [
+                        {
+                            "name": "akka-http-core_3",
+                            "path": "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\typesafe\\akka\\akka-http-core_3\\10.5.3\\akka-http-core_3-10.5.3.jar"
+                        },
+                        {
+                            "name": "akka-http-core_3",
+                            "classifier": "sources",
+                            "path": "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\typesafe\\akka\\akka-http-core_3\\10.5.3\\akka-http-core_3-10.5.3-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "com.typesafe.akka",
+                    "name": "akka-actor-typed_3",
+                    "version": "2.8.5",
+                    "configurations": "default",
+                    "artifacts": [
+                        {
+                            "name": "akka-actor-typed_3",
+                            "path": "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\typesafe\\akka\\akka-actor-typed_3\\2.8.5\\akka-actor-typed_3-2.8.5.jar"
+                        },
+                        {
+                            "name": "akka-actor-typed_3",
+                            "classifier": "sources",
+                            "path": "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\typesafe\\akka\\akka-actor-typed_3\\2.8.5\\akka-actor-typed_3-2.8.5-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "com.typesafe.akka",
+                    "name": "akka-stream_3",
+                    "version": "2.6.20",
+                    "configurations": "default",
+                    "artifacts": [
+                        {
+                            "name": "akka-stream_3",
+                            "path": "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\typesafe\\akka\\akka-stream_3\\2.6.20\\akka-stream_3-2.6.20.jar"
+                        },
+                        {
+                            "name": "akka-stream_3",
+                            "classifier": "sources",
+                            "path": "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\typesafe\\akka\\akka-stream_3\\2.6.20\\akka-stream_3-2.6.20-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "com.lihaoyi",
+                    "name": "upickle_3",
+                    "version": "4.0.0",
+                    "configurations": "default",
+                    "artifacts": [
+                        {
+                            "name": "upickle_3",
+                            "path": "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\lihaoyi\\upickle_3\\4.0.0\\upickle_3-4.0.0.jar"
+                        },
+                        {
+                            "name": "upickle_3",
+                            "classifier": "sources",
+                            "path": "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\lihaoyi\\upickle_3\\4.0.0\\upickle_3-4.0.0-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "com.typesafe",
+                    "name": "config",
+                    "version": "1.4.3",
+                    "configurations": "default",
+                    "artifacts": [
+                        {
+                            "name": "config",
+                            "path": "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\typesafe\\config\\1.4.3\\config-1.4.3.jar"
+                        },
+                        {
+                            "name": "config",
+                            "classifier": "sources",
+                            "path": "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\typesafe\\config\\1.4.3\\config-1.4.3-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "com.github.tototoshi",
+                    "name": "scala-csv_3",
+                    "version": "1.3.10",
+                    "configurations": "default",
+                    "artifacts": [
+                        {
+                            "name": "scala-csv_3",
+                            "path": "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\github\\tototoshi\\scala-csv_3\\1.3.10\\scala-csv_3-1.3.10.jar"
+                        },
+                        {
+                            "name": "scala-csv_3",
+                            "classifier": "sources",
+                            "path": "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\github\\tototoshi\\scala-csv_3\\1.3.10\\scala-csv_3-1.3.10-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "org.scala-lang",
+                    "name": "scala-library",
+                    "version": "2.13.15",
+                    "configurations": "default",
+                    "artifacts": [
+                        {
+                            "name": "scala-library",
+                            "path": "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\org\\scala-lang\\scala-library\\2.13.15\\scala-library-2.13.15.jar"
+                        },
+                        {
+                            "name": "scala-library",
+                            "classifier": "sources",
+                            "path": "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\org\\scala-lang\\scala-library\\2.13.15\\scala-library-2.13.15-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "com.typesafe.akka",
+                    "name": "akka-parsing_3",
+                    "version": "10.5.3",
+                    "configurations": "default",
+                    "artifacts": [
+                        {
+                            "name": "akka-parsing_3",
+                            "path": "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\typesafe\\akka\\akka-parsing_3\\10.5.3\\akka-parsing_3-10.5.3.jar"
+                        },
+                        {
+                            "name": "akka-parsing_3",
+                            "classifier": "sources",
+                            "path": "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\typesafe\\akka\\akka-parsing_3\\10.5.3\\akka-parsing_3-10.5.3-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "com.typesafe.akka",
+                    "name": "akka-actor_3",
+                    "version": "2.8.5",
+                    "configurations": "default",
+                    "artifacts": [
+                        {
+                            "name": "akka-actor_3",
+                            "path": "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\typesafe\\akka\\akka-actor_3\\2.8.5\\akka-actor_3-2.8.5.jar"
+                        },
+                        {
+                            "name": "akka-actor_3",
+                            "classifier": "sources",
+                            "path": "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\typesafe\\akka\\akka-actor_3\\2.8.5\\akka-actor_3-2.8.5-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "com.typesafe.akka",
+                    "name": "akka-slf4j_3",
+                    "version": "2.8.5",
+                    "configurations": "default",
+                    "artifacts": [
+                        {
+                            "name": "akka-slf4j_3",
+                            "path": "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\typesafe\\akka\\akka-slf4j_3\\2.8.5\\akka-slf4j_3-2.8.5.jar"
+                        },
+                        {
+                            "name": "akka-slf4j_3",
+                            "classifier": "sources",
+                            "path": "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\typesafe\\akka\\akka-slf4j_3\\2.8.5\\akka-slf4j_3-2.8.5-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "org.slf4j",
+                    "name": "slf4j-api",
+                    "version": "1.7.36",
+                    "configurations": "default",
+                    "artifacts": [
+                        {
+                            "name": "slf4j-api",
+                            "path": "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\org\\slf4j\\slf4j-api\\1.7.36\\slf4j-api-1.7.36.jar"
+                        },
+                        {
+                            "name": "slf4j-api",
+                            "classifier": "sources",
+                            "path": "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\org\\slf4j\\slf4j-api\\1.7.36\\slf4j-api-1.7.36-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "com.typesafe.akka",
+                    "name": "akka-protobuf-v3_3",
+                    "version": "2.6.20",
+                    "configurations": "default",
+                    "artifacts": [
+                        {
+                            "name": "akka-protobuf-v3_3",
+                            "path": "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\typesafe\\akka\\akka-protobuf-v3_3\\2.6.20\\akka-protobuf-v3_3-2.6.20.jar"
+                        },
+                        {
+                            "name": "akka-protobuf-v3_3",
+                            "classifier": "sources",
+                            "path": "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\typesafe\\akka\\akka-protobuf-v3_3\\2.6.20\\akka-protobuf-v3_3-2.6.20-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "org.reactivestreams",
+                    "name": "reactive-streams",
+                    "version": "1.0.3",
+                    "configurations": "default",
+                    "artifacts": [
+                        {
+                            "name": "reactive-streams",
+                            "path": "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\org\\reactivestreams\\reactive-streams\\1.0.3\\reactive-streams-1.0.3.jar"
+                        },
+                        {
+                            "name": "reactive-streams",
+                            "classifier": "sources",
+                            "path": "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\org\\reactivestreams\\reactive-streams\\1.0.3\\reactive-streams-1.0.3-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "com.typesafe",
+                    "name": "ssl-config-core_3",
+                    "version": "0.6.1",
+                    "configurations": "default",
+                    "artifacts": [
+                        {
+                            "name": "ssl-config-core_3",
+                            "path": "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\typesafe\\ssl-config-core_3\\0.6.1\\ssl-config-core_3-0.6.1.jar"
+                        },
+                        {
+                            "name": "ssl-config-core_3",
+                            "classifier": "sources",
+                            "path": "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\typesafe\\ssl-config-core_3\\0.6.1\\ssl-config-core_3-0.6.1-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "com.lihaoyi",
+                    "name": "ujson_3",
+                    "version": "4.0.0",
+                    "configurations": "default",
+                    "artifacts": [
+                        {
+                            "name": "ujson_3",
+                            "path": "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\lihaoyi\\ujson_3\\4.0.0\\ujson_3-4.0.0.jar"
+                        },
+                        {
+                            "name": "ujson_3",
+                            "classifier": "sources",
+                            "path": "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\lihaoyi\\ujson_3\\4.0.0\\ujson_3-4.0.0-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "com.lihaoyi",
+                    "name": "upack_3",
+                    "version": "4.0.0",
+                    "configurations": "default",
+                    "artifacts": [
+                        {
+                            "name": "upack_3",
+                            "path": "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\lihaoyi\\upack_3\\4.0.0\\upack_3-4.0.0.jar"
+                        },
+                        {
+                            "name": "upack_3",
+                            "classifier": "sources",
+                            "path": "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\lihaoyi\\upack_3\\4.0.0\\upack_3-4.0.0-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "com.lihaoyi",
+                    "name": "upickle-implicits_3",
+                    "version": "4.0.0",
+                    "configurations": "default",
+                    "artifacts": [
+                        {
+                            "name": "upickle-implicits_3",
+                            "path": "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\lihaoyi\\upickle-implicits_3\\4.0.0\\upickle-implicits_3-4.0.0.jar"
+                        },
+                        {
+                            "name": "upickle-implicits_3",
+                            "classifier": "sources",
+                            "path": "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\lihaoyi\\upickle-implicits_3\\4.0.0\\upickle-implicits_3-4.0.0-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "org.scala-lang.modules",
+                    "name": "scala-java8-compat_3",
+                    "version": "1.0.0",
+                    "configurations": "default",
+                    "artifacts": [
+                        {
+                            "name": "scala-java8-compat_3",
+                            "path": "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\org\\scala-lang\\modules\\scala-java8-compat_3\\1.0.0\\scala-java8-compat_3-1.0.0.jar"
+                        },
+                        {
+                            "name": "scala-java8-compat_3",
+                            "classifier": "sources",
+                            "path": "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\org\\scala-lang\\modules\\scala-java8-compat_3\\1.0.0\\scala-java8-compat_3-1.0.0-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "com.lihaoyi",
+                    "name": "upickle-core_3",
+                    "version": "4.0.0",
+                    "configurations": "default",
+                    "artifacts": [
+                        {
+                            "name": "upickle-core_3",
+                            "path": "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\lihaoyi\\upickle-core_3\\4.0.0\\upickle-core_3-4.0.0.jar"
+                        },
+                        {
+                            "name": "upickle-core_3",
+                            "classifier": "sources",
+                            "path": "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\lihaoyi\\upickle-core_3\\4.0.0\\upickle-core_3-4.0.0-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "com.lihaoyi",
+                    "name": "geny_3",
+                    "version": "1.1.1",
+                    "configurations": "default",
+                    "artifacts": [
+                        {
+                            "name": "geny_3",
+                            "path": "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\lihaoyi\\geny_3\\1.1.1\\geny_3-1.1.1.jar"
+                        },
+                        {
+                            "name": "geny_3",
+                            "classifier": "sources",
+                            "path": "C:\\Users\\User\\AppData\\Local\\Coursier\\Cache\\v1\\https\\repo1.maven.org\\maven2\\com\\lihaoyi\\geny_3\\1.1.1\\geny_3-1.1.1-sources.jar"
+                        }
+                    ]
+                }
+            ]
+        },
+        "tags": [
+            "library"
+        ]
+    }
+}

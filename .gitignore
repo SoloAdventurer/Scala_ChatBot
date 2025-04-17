@@ -1,0 +1,15 @@
+# SBT
+target/
+project/target/
+project/project/
+
+# IntelliJ
+.idea/
+*.iml
+
+# macOS
+.DS_Store
+
+# Logs
+logs/
+*.log

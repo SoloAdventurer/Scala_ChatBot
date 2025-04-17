@@ -1,0 +1,130 @@
+[
+    {
+        "_type": "Planet",
+        "name": "Mercury",
+        "diameter": "4879 km",
+        "meanTemperature": "167°C",
+        "distanceFromSun": "57.9 million km",
+        "facts": {
+            "moons": "0",
+            "feature": "Craters"
+        },
+        "tags": [
+            "hot",
+            "rocky"
+        ]
+    },
+    {
+        "_type": "Planet",
+        "name": "Venus",
+        "diameter": "12104 km",
+        "meanTemperature": "464°C",
+        "distanceFromSun": "108.2 million km",
+        "facts": {
+            "moons": "0",
+            "feature": "Thick clouds"
+        },
+        "tags": [
+            "hot",
+            "rocky"
+        ]
+    },
+    {
+        "_type": "Planet",
+        "name": "Mars",
+        "diameter": "6792 km",
+        "meanTemperature": "-65°C",
+        "distanceFromSun": "227.9 million km",
+        "facts": {
+            "moons": "2",
+            "color": "Red"
+        },
+        "tags": [
+            "cold",
+            "rocky"
+        ]
+    },
+    {
+        "_type": "Planet",
+        "name": "Jupiter",
+        "diameter": "139820 km",
+        "meanTemperature": "-110°C",
+        "distanceFromSun": "778.5 million km",
+        "facts": {
+            "moons": "79",
+            "feature": "Great Red Spot"
+        },
+        "tags": [
+            "cold",
+            "gas giant"
+        ]
+    },
+    {
+        "_type": "Planet",
+        "name": "Saturn",
+        "diameter": "116460 km",
+        "meanTemperature": "-140°C",
+        "distanceFromSun": "1433.5 million km",
+        "facts": {
+            "moons": "83",
+            "feature": "Rings"
+        },
+        "tags": [
+            "cold",
+            "gas giant"
+        ]
+    },
+    {
+        "_type": "Planet",
+        "name": "Uranus",
+        "diameter": "50724 km",
+        "meanTemperature": "-195°C",
+        "distanceFromSun": "2872.5 million km",
+        "facts": {
+            "moons": "27",
+            "feature": "Tilted axis"
+        },
+        "tags": [
+            "cold",
+            "gas giant"
+        ]
+    },
+    {
+        "_type": "Planet",
+        "name": "Neptune",
+        "diameter": "49244 km",
+        "meanTemperature": "-200°C",
+        "distanceFromSun": "4495.1 million km",
+        "facts": {
+            "moons": "14",
+            "feature": "Dark spots"
+        },
+        "tags": [
+            "cold",
+            "gas giant"
+        ]
+    },
+    {
+        "_type": "Planet",
+        "name": "Earth",
+        "diameter": "12742 km",
+        "meanTemperature": "15°C",
+        "distanceFromSun": "149.6 million km",
+        "facts": {
+            "moons": "1",
+            "feature": "Life"
+        },
+        "tags": [
+            "temperate",
+            "rocky"
+        ]
+    },
+    {
+        "_type": "Phenomenon",
+        "name": "Black hole",
+        "description": "Region of spacetime with extreme gravity",
+        "tags": [
+            "cosmic"
+        ]
+    }
+]
