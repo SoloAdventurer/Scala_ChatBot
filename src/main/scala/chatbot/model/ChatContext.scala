@@ -1,15 +1,25 @@
-package chatbot.model
+package chatbot.context
+case class Question(text: String, options: List[String], correct: String)
 
-case class ChatContext(
-  history: List[(String, String)] = Nil,
-  quizState: Option[QuizState] = None
-  // TODO (Your Name): Add methods to update history (e.g., append input/response).
-  // TODO (Your Name): Implement quiz state transitions (e.g., next question).
-)
+class ChatContext {
+  private val questions = List(
+    Question("Which planet is known as the Red Planet?", List("Mars", "Jupiter", "Venus"), "a"),
+    Question("Which planet has the most moons?", List("Saturn", "Jupiter", "Neptune"), "a")
+  )
+  private var currentQuestion: Option[Question] = None
+  private var questionIndex: Int                = 0
 
-case class QuizState(
-  question: String,
-  correctAnswer: String,
-  questionNumber: Int
-  // TODO (Your Name): Add fields for score, total questions.
-)
+  def startQuiz(): Unit = {
+    questionIndex = 0
+    currentQuestion = questions.headOption
+  }
+
+  def getCurrentQuestion: Option[Question] = currentQuestion
+
+  def submitAnswer(answer: String): Option[Boolean] = currentQuestion.map { q =>
+    val correct = answer.toLowerCase == q.correct
+    questionIndex += 1
+    currentQuestion = questions.lift(questionIndex)
+    correct
+  }
+}
