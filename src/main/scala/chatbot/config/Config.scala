@@ -1,13 +1,17 @@
 package chatbot.config
 
-case class Config(dataPath: String, serverPort: Int)
+case class Config(dataContent: String, serverPort: Int)
 
 object Config {
   def load: Config = {
-    // Use ClassLoader to load from src/main/resources
-    val resourcePath = Option(getClass.getClassLoader.getResource("astronomy.json"))
-      .map(_.getPath)
-      .getOrElse("resources/astronomy.json") // Fallback path
-    Config(dataPath = resourcePath, serverPort = 8080)
+    val serverPort   = 8080
+    val resourceName = "astronomy.json"
+    try {
+      val content = os.read(os.resource / resourceName)
+      Config(dataContent = content, serverPort = serverPort)
+    } catch {
+      case e: Exception =>
+        throw new RuntimeException(s"Failed to load $resourceName: ${e.getMessage}")
+    }
   }
 }
