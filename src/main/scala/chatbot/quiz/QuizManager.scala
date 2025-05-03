@@ -1,89 +1,71 @@
 package chatbot.quiz
 
-import scala.util.Random
-
-case class QuizQuestion(id: String, text: String, options: List[String], correctAnswer: Option[String])
-
-case class QuizResult(feedback: String, correct: Boolean)
+import chatbot.quiz.data.QuizQuestion
 
 class QuizManager {
-  private var currentQuestions: List[QuizQuestion] = List()
+  private var questions: List[QuizQuestion] = List()
+  private var currentIndex: Int             = 0
+  private var correctAnswers: Int           = 0
+  private var totalQuestions: Int           = 0
 
   def selectQuizQuestions(topic: String): List[QuizQuestion] = {
     val traditional = List(
       QuizQuestion(
-        id = "q1",
-        text = "What is the name of our galaxy?",
-        options = List("Butterfly Galaxy", "Milky Way Galaxy", "Spiral Galaxy"),
-        correctAnswer = Some("Milky Way Galaxy")
+        "q1",
+        "What is the name of our galaxy?",
+        List("Butterfly Galaxy", "Milky Way Galaxy", "Spiral Galaxy"),
+        Some("Milky Way Galaxy")
       ),
       QuizQuestion(
-        id = "q2",
-        text = "What is the smallest planet in our solar system?",
-        options = List("Mercury", "Mars", "Saturn"),
-        correctAnswer = Some("Mercury")
+        "q2",
+        "What is the smallest planet in our solar system?",
+        List("Mercury", "Mars", "Saturn"),
+        Some("Mercury")
       ),
+      QuizQuestion("q3", "Which planet is known as the Red Planet?", List("Jupiter", "Mars", "Saturn"), Some("Mars")),
       QuizQuestion(
-        id = "q3",
-        text = "Which planet is known as the Red Planet?",
-        options = List("Jupiter", "Mars", "Saturn"),
-        correctAnswer = Some("Mars")
-      ),
+        "q4",
+        "What is the largest planet in our solar system?",
+        List("Neptune", "Jupiter", "Saturn"),
+        Some("Jupiter")
+      ), // Fixed typo: "Neptun,Jupiter" to "Neptune"
       QuizQuestion(
-        id = "q4",
-        text = "What is the largest planet in our solar system?",
-        options = List("Neptune", "Jupiter", "Saturn"),
-        correctAnswer = Some("Jupiter")
-      ),
-      QuizQuestion(
-        id = "q5",
-        text = "How does it rain on Venus?",
-        options = List("Diamonds", "Methane", "Sulfuric Acid"),
-        correctAnswer = Some("Sulfuric Acid")
+        "q5",
+        "How does it rain on Venus?",
+        List("Diamonds", "Methane", "Sulfuric Acid"),
+        Some("Sulfuric Acid")
       )
     )
 
     val personal = List(
       QuizQuestion(
-        id = "p1",
-        text = "What is your favourite planet in our solar system?",
-        options = List("Mercury", "Venus", "Earth", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune"),
-        correctAnswer = None
+        "p1",
+        "What is your favourite planet in our solar system?",
+        List("Mercury", "Venus", "Earth", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune"),
+        None
       ),
       QuizQuestion(
-        id = "p2",
-        text = "Which planet of the following would you want to live on?",
-        options = List("Saturn", "Jupiter", "Mars"),
-        correctAnswer = None
+        "p2",
+        "Which planet of the following would you want to live on?",
+        List("Saturn", "Jupiter", "Mars"),
+        None
       ),
       QuizQuestion(
-        id = "p3",
-        text = "Would you rather fly through the clouds or walk on the moon?",
-        options = List("Fly through the clouds", "Walk on the moon", "Both"),
-        correctAnswer = None
+        "p3",
+        "Would you rather fly through the clouds or walk on the moon?",
+        List("Fly through the clouds", "Walk on the moon", "Both"),
+        None
       ),
+      QuizQuestion("p4", "Which one of the following is your favourite?", List("Scorpio", "Libra", "Leo"), None),
       QuizQuestion(
-        id = "p4",
-        text = "Which one of the following is your favourite constellation?",
-        options = List("Scorpio", "Libra", "Leo"),
-        correctAnswer = None
-      ),
-      QuizQuestion(
-        id = "p5",
-        text = "Which of the following do you like the best?",
-        options = List("Aurora", "Solar Eclipse", "Supernova"),
-        correctAnswer = None
+        "p5",
+        "Which of the following do you like the best?",
+        List("Aurora", "Solar Eclipse", "Supernova"),
+        None
       )
     )
 
-    val notFound = List(
-      QuizQuestion(
-        id = "nf1",
-        text = "The topic is not found",
-        options = List(""),
-        correctAnswer = None
-      )
-    )
+    val notFound = List(QuizQuestion("nf1", "The topic is not found", List(""), None))
 
     topic.toLowerCase match {
       case "traditional" => traditional
@@ -92,30 +74,76 @@ class QuizManager {
     }
   }
 
-  def evaluateQuizAnswer(userAnswer: String, correctAnswer: Option[String]): QuizResult = {
-    correctAnswer match {
-      case Some(correct) =>
-        val isCorrect = userAnswer.trim.toLowerCase == correct.toLowerCase || correct.toLowerCase.contains(
-          userAnswer.trim.toLowerCase
-        )
-        val feedback = if (isCorrect) "Well done!" else s"The correct answer was $correct."
-        QuizResult(feedback, isCorrect)
-      case None =>
-        QuizResult("Thanks for sharing your preference!", true)
+  def evaluateQuizAnswer(userAnswer: String, correctAnswer: String): Boolean = {
+    userAnswer.trim.toLowerCase == correctAnswer.toLowerCase || correctAnswer.toLowerCase.contains(
+      userAnswer.trim.toLowerCase
+    )
+  }
+
+  def startQuiz(topic: String, questionCount: Int): Option[QuizQuestion] = {
+    questions = selectQuizQuestions(topic).take(questionCount)
+    if (questions.isEmpty || questions.head.text == "The topic is not found") {
+      None
+    } else {
+      currentIndex = 0
+      correctAnswers = 0
+      totalQuestions = questions.length
+      questions.headOption
     }
   }
 
-  def startQuiz(): QuizQuestion = {
-    // Alternate between traditional and personal topics
-    val topic = if (Random.nextBoolean()) "traditional" else "personal"
-    currentQuestions = selectQuizQuestions(topic)
-    currentQuestions(Random.nextInt(currentQuestions.length))
+  def answerCurrentQuestion(userAnswer: String): Option[String] = {
+    if (currentIndex >= questions.length) {
+      None
+    } else {
+      val question = questions(currentIndex)
+      question.correctAnswer match {
+        case Some(correct) =>
+          if (evaluateQuizAnswer(userAnswer, correct)) {
+            correctAnswers += 1
+            Some("Correct!")
+          } else {
+            Some(s"Incorrect. The correct answer is: $correct")
+          }
+        case None =>
+          Some("Thanks for your answer!")
+      }
+    }
   }
 
-  def checkAnswer(questionId: String, userAnswer: String): QuizResult = {
-    currentQuestions.find(_.id == questionId) match {
-      case Some(question) => evaluateQuizAnswer(userAnswer, question.correctAnswer)
-      case None           => QuizResult("Question not found.", false)
+  def nextQuestion(): Option[QuizQuestion] = {
+    currentIndex += 1
+    if (currentIndex < questions.length) {
+      Some(questions(currentIndex))
+    } else {
+      None
     }
+  }
+
+  def getCurrentQuestion(): Option[QuizQuestion] = {
+    if (currentIndex < questions.length) {
+      Some(questions(currentIndex))
+    } else {
+      None
+    }
+  }
+
+  def getQuizSummary(): String = {
+    if (totalQuestions == 0) {
+      "No quiz was taken."
+    } else {
+      s"Quiz Summary: You got $correctAnswers out of $totalQuestions correct!"
+    }
+  }
+
+  def resetQuiz(): Unit = {
+    questions = List()
+    currentIndex = 0
+    correctAnswers = 0
+    totalQuestions = 0
+  }
+
+  def isQuizActive(): Boolean = {
+    questions.nonEmpty && currentIndex < questions.length
   }
 }

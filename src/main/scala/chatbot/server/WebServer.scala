@@ -7,29 +7,25 @@ import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Directives._
 import chatbot.config.Config
 import chatbot.parser.InputParser
-import chatbot.parser.AST.Command
 import chatbot.responder.Responder
 import chatbot.quiz.QuizManager
-import chatbot.data.{AstronomyData, PlanetApiClient}
+import chatbot.data.AstronomyData
 import chatbot.analytics.Analytics
 import scala.io.StdIn
 import scala.util.{Failure, Success}
+import chatbot.quiz.QuizHandler
 
 object WebServer {
-  def main(args: Array[String]): Unit = {
-    implicit val system           = ActorSystem(Behaviors.empty, "ChatbotSystem")
-    implicit val executionContext = system.executionContext
+  private var chatHistory: List[(String, String)]                     = List()
+  private var currentQuestion: Option[chatbot.quiz.data.QuizQuestion] = None
+  private var quizActive: Boolean                                     = false
+  private var userName: Option[String]                                = None
 
-    val config      = Config.load
-    val dataSource  = new AstronomyData(config)
-    val apiClient   = new PlanetApiClient()
-    val analytics   = new Analytics()
-    val inputParser = new InputParser()
-    val responder   = new Responder(dataSource, apiClient, analytics)
-    val quizManager = new QuizManager()
+  private def addToHistory(query: String, response: String): Unit = {
+    chatHistory = (query, response) :: chatHistory.take(4)
+  }
 
-    // CSS for starry theme
-    val starryThemeCSS = """
+  private val starryThemeCSS = """
     body {
       background-color: #0a0e2a;
       color: #ffffff;
@@ -62,33 +58,6 @@ object WebServer {
       50% { transform: translateY(-10px) rotate(5deg); }
       100% { transform: translateY(0) rotate(0deg); }
     }
-    @keyframes twinkling {
-      0% { opacity: 0.3; }
-      50% { opacity: 1; }
-      100% { opacity: 0.3; }
-    }
-    @keyframes shooting-star {
-      0% { transform: translateX(0) translateY(0) rotate(45deg); opacity: 0; }
-      10% { opacity: 1; }
-      40% { opacity: 1; }
-      60% { opacity: 0; }
-      100% { transform: translateX(300px) translateY(300px) rotate(45deg); opacity: 0; }
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes glow {
-      0% { box-shadow: 0 0 5px rgba(100, 160, 255, 0.6); }
-      50% { box-shadow: 0 0 15px rgba(100, 160, 255, 0.9), 0 0 25px rgba(100, 160, 255, 0.6); }
-      100% { box-shadow: 0 0 5px rgba(100, 160, 255, 0.6); }
-    }
-    @keyframes dots {
-      0% { content: '.'; }
-      33% { content: '..'; }
-      66% { content: '...'; }
-      100% { content: '.'; }
-    }
     .container {
       max-width: 800px;
       margin: 20px auto;
@@ -117,7 +86,6 @@ object WebServer {
       text-shadow: 0 0 15px rgba(100, 160, 255, 0.8);
       font-size: 2.5em;
       margin-bottom: 20px;
-      animation: glow 3s ease-in-out infinite;
     }
     h2 {
       color: #a09be7;
@@ -125,69 +93,19 @@ object WebServer {
       padding-bottom: 10px;
       margin-top: 30px;
     }
-    a {
-      color: #64a0ff;
-      text-decoration: none;
-      transition: all 0.3s ease;
-      position: relative;
-    }
-    a:hover {
-      color: #a0c8ff;
-      text-shadow: 0 0 8px rgba(100, 160, 255, 0.8);
-    }
-    a::after {
-      content: '';
-      position: absolute;
-      width: 0;
-      height: 1px;
-      bottom: -2px;
-      left: 0;
-      background-color: #a0c8ff;
-      transition: width 0.3s ease;
-    }
-    a:hover::after {
-      width: 100%;
-    }
-    code {
-      background-color: #1c2452;
-      padding: 4px 8px;
-      border-radius: 4px;
-      box-shadow: 0 0 5px rgba(28, 36, 82, 0.5);
-      font-family: 'Fira Code', monospace;
-      letter-spacing: -0.5px;
-    }
-    .footer {
-      margin-top: 40px;
-      text-align: center;
-      font-size: 0.9em;
-      color: #64a0ff;
-      padding: 15px;
-      border-top: 1px solid rgba(100, 150, 255, 0.3);
-    }
-    pre {
-      white-space: pre-wrap;
-      font-family: 'Fira Code', monospace;
-      margin: 0;
-    }
-    .chat-input {
-      display: flex;
-      gap: 10px;
-      margin-top: 20px;
-    }
     input[type="text"] {
       background-color: rgba(13, 20, 55, 0.6);
       border: 1px solid rgba(100, 150, 255, 0.3);
       color: white;
       border-radius: 5px;
       padding: 12px;
-      flex: 1;
-      transition: all 0.3s ease;
+      width: calc(100% - 24px);
+      margin-bottom: 10px;
       font-family: 'Montserrat', Arial, sans-serif;
     }
     input[type="text"]:focus {
       outline: none;
       border-color: rgba(100, 150, 255, 0.8);
-      animation: glow 2s ease-in-out infinite;
     }
     button {
       transition: all 0.3s ease;
@@ -200,76 +118,13 @@ object WebServer {
       background-color: #3d5afe;
       color: white;
       border: none;
+      margin-right: 10px;
+      margin-bottom: 10px;
     }
     button:hover {
       background-color: #536dfe;
       box-shadow: 0 0 15px rgba(83, 109, 254, 0.7);
       transform: translateY(-2px);
-    }
-    .shooting-star {
-      position: absolute;
-      width: 100px;
-      height: 2px;
-      background: linear-gradient(to right, transparent, #fff, transparent);
-      animation: shooting-star 3s linear infinite;
-      top: 20%;
-      left: 10%;
-    }
-    .shooting-star:nth-child(2) {
-      top: 60%;
-      left: 80%;
-      animation-delay: 1.5s;
-    }
-    .planet {
-      position: absolute;
-      opacity: 0.2;
-      z-index: -1;
-      animation: floatingPlanet 8s ease-in-out infinite;
-    }
-    .star {
-      position: absolute;
-      width: 2px;
-      height: 2px;
-      background: white;
-      border-radius: 50%;
-      animation: twinkling 3s ease-in-out infinite;
-    }
-    .chat-messages {
-      margin-top: 20px;
-      padding: 10px;
-      border-radius: 8px;
-      min-height: 100px;
-      max-height: 400px;
-      overflow-y: auto;
-    }
-    .message {
-      margin: 10px 0;
-      padding: 10px 15px;
-      border-radius: 8px;
-      max-width: 80%;
-      animation: fadeIn 0.5s ease-in;
-    }
-    .user-message {
-      background-color: #3d5afe;
-      margin-left: auto;
-      color: white;
-    }
-    .bot-message {
-      background-color: #1c2452;
-      margin-right: auto;
-      color: #e0e7ff;
-    }
-    .loading {
-      display: none;
-      color: #64a0ff;
-      padding: 10px;
-    }
-    .loading.active {
-      display: block;
-    }
-    .loading::after {
-      content: '...';
-      animation: dots 1.5s steps(3, end) infinite;
     }
     .response-container {
       background-color: rgba(28, 36, 82, 0.6);
@@ -277,6 +132,33 @@ object WebServer {
       border-radius: 10px;
       margin: 20px 0;
       border-left: 3px solid #64a0ff;
+    }
+    .query {
+      display: inline-block;
+      margin-bottom: 10px;
+      padding: 5px 10px;
+      background-color: rgba(28, 36, 82, 0.8);
+      border-radius: 5px;
+      border-left: 3px solid #a09be7;
+    }
+    .history-entry {
+      background-color: rgba(28, 36, 82, 0.6);
+      padding: 10px;
+      border-radius: 8px;
+      margin: 10px 0;
+      border-left: 3px solid #a09be7;
+    }
+    .history-entry p {
+      margin: 5px 0;
+    }
+    a {
+      color: #64a0ff;
+      text-decoration: none;
+      transition: all 0.3s ease;
+    }
+    a:hover {
+      color: #a0c8ff;
+      text-shadow: 0 0 8px rgba(100, 160, 255, 0.8);
     }
     ul {
       list-style-type: none;
@@ -292,17 +174,93 @@ object WebServer {
       left: 0;
       color: #64a0ff;
     }
-    .query {
-      display: inline-block;
-      margin-bottom: 10px;
-      padding: 5px 10px;
-      background-color: rgba(28, 36, 82, 0.8);
-      border-radius: 5px;
-      border-left: 3px solid #a09be7;
+    .footer {
+      margin-top: 40px;
+      text-align: center;
+      font-size: 0.9em;
+      color: #64a0ff;
+      padding: 15px;
+      border-top: 1px solid rgba(100, 150, 255, 0.3);
+    }
+    pre {
+      white-space: pre-wrap;
+      font-family: 'Fira Code', monospace;
+      margin: 0;
+    }
+    .answer-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
     }
     """
 
-    val welcomeHTML = s"""
+  def renderPage(
+    lastQuery: Option[String] = None,
+    response: Option[String] = None,
+    isQuizActive: Boolean = false,
+    quizSummary: Option[String] = None,
+    question: Option[chatbot.quiz.data.QuizQuestion] = None
+  ): String = {
+    val greeting = userName match {
+      case Some(name) => s"Hello, $name! Welcome to the Astronomy Chatbot!"
+      case None       => "Welcome to the Astronomy Chatbot! What's your name?"
+    }
+    val nameForm = if (userName.isEmpty) {
+      s"""
+        <form method="POST" action="/set-name">
+          <input type="text" name="name" placeholder="Enter your name..." />
+          <button type="submit">Submit Name</button>
+        </form>
+      """
+    } else {
+      ""
+    }
+    val responseSection = response
+      .map { msg =>
+        val personalizedMsg = userName match {
+          case Some(name) => s"$name, $msg"
+          case None       => msg
+        }
+        val summarySection = quizSummary.map(summary => s"<p>$summary</p>").getOrElse("")
+        val questionSection = question
+          .map { q =>
+            // Only show question form if no question is in the response or quiz has ended
+            if (!msg.contains("Question:") || quizSummary.isDefined) {
+              s"""
+                <p><strong>Question:</strong> ${q.text}</p>
+                <form method="POST" action="/answer-quiz">
+                  <input type="hidden" name="questionId" value="${q.id}" />
+                  <div class="answer-buttons">
+                    ${q.options
+                  .map(opt => s"""<button type="submit" name="answer" value="${opt}">${opt}</button>""")
+                  .mkString}
+                  </div>
+                </form>
+              """
+            } else {
+              ""
+            }
+          }
+          .getOrElse("")
+        s"""
+          <div class="response-container">
+            ${lastQuery.map(q => s"<div class='query'>Your query: $q</div>").getOrElse("")}
+            <p>$personalizedMsg</p>
+            $questionSection
+            $summarySection
+            ${if (isQuizActive && question.isDefined && questionSection.nonEmpty) """
+              <form method="POST" action="/continue-quiz">
+                <button type="submit" name="action" value="next">Next Question</button>
+                <button type="submit" name="action" value="skip">Skip</button>
+                <button type="submit" name="action" value="end">End Quiz</button>
+              </form>
+            """ else ""}
+          </div>
+        """
+      }
+      .getOrElse("")
+
+    s"""
       <!DOCTYPE html>
       <html>
         <head>
@@ -316,60 +274,27 @@ object WebServer {
             <pre style="color: cyan;">=======================================</pre>
             <pre style="color: yellow;">Team:</pre><pre style="color: white;"> Chaturn</pre>
             <pre style="color: yellow;">Members:</pre><pre style="color: white;"> Mohamed, Dania, Maroska, Jana</pre>
-            <pre style="color: cyan;">
-                                                                    ..;===+.
-                                                                .:=iiiiii=+=
-                                                             .=i))=;::+)i=+,
-                                                          ,=i);)I)))I):=i=;
-                                                       .=i==))))ii)))I:i++
-                                                     +)+))iiiiiiii))I=i+:''
-                                .,:;;++++++;:,.       )iii+:::;iii))+i='
-                             .:;++=iiiiiiiiii=++;.    =::,,,:::=i));=+''
-                           ,;+==ii)))))))))))ii==+;,      ,,,:=i))+=:
-                         ,;+=ii))))))IIIIII))))ii===;.    ,,:=i)=i+
-                        ;+=ii)))IIIIITIIIIII))))iiii=+,   ,:=));=,
-                      ,+=i))IIIIIITTTTTITIIIIII)))I)i=+,,:+i)=i+
-                     ,+i))IIIIIITTTTTTTTTTTTI))IIII))i=::i))i='
-                    ,=i))IIIIITLLTTTTTTTTTTIITTTTIII)+;+i)+i`
-                    =i))IIITTLTLTTTTTTTTTIITTLLTTTII+:i)ii:''
-                   +i))IITTTLLLTTTTTTTTTTTTLLLTTTT+:i)))=,
-                   =))ITTTTTTTTTTTLTTTTTTLLLLLLTi:=)IIiii;
-                  .i)IIITTTTTTTTLTTTITLLLLLLLT);=)I)))))i;
-                  :))IIITTTTTLTTTTTTLLHLLLLL);=)II)IIIIi=:
-                  :i)IIITTTTTTTTTLLLHLLHLL)+=)II)ITTTI)i=
-                  .i)IIITTTTITTLLLHHLLLL);=)II)ITTTTII)i+
-                  =i)IIIIIITTLLLLLLHLL=:i)II)TTTTTTIII)i''
-                +i)i)))IITTLLLLLLLLT=:i)II)TTTTLTTIII)i;
-              +ii)i:)IITTLLTLLLLT=;+i)I)ITTTTLTTTII))i;
-             =;)i=:,=)ITTTTLTTI=:i))I)TTTLLLTTTTTII)i;
-           +i)ii::,  +)IIITI+:+i)I))TTTTLLTTTTTII))=,
-         :=;)i=:,,    ,i++::i))I)ITTTTTTTTTTIIII)=+''
-       .+ii)i=::,,   ,,::=i)))iIITTTTTTTTIIIII)=+
-      ,==)ii=;:,,,,:::=ii)i)iIIIITIIITIIII))i+:'
-     +=:))i==;:::;=iii)+)=  `:i)))IIIII)ii+'
-   .+=:))iiiiiiii)))+ii;
-  .+=;))iiiiii)));ii+
- .+=i:)))))))=+ii+
-.;==i+::::=)i=;
-,+==iiiiii+,
-`+=+++;`
-            </pre>
             <h1>🔭 Astronomy Chatbot 🪐</h1>
-            <p>Welcome to the Astronomy Chatbot! Ask questions about planets, stars, galaxies, and more.</p>
+            <p>$greeting</p>
             
-            <h2>How to use:</h2>
-            <ul>
-              <li>Ask a question: <code>/chat?input=ask about Mars</code></li>
-              <li>List planets: <code>/chat?input=list planets</code></li>
-              <li>Get facts: <code>/chat?input=fact about black holes</code></li>
-              <li>Take a quiz: <code>/quiz?start=true</code></li>
-            </ul>
+            $nameForm
             
-            <h2>Try a query:</h2>
-            <form action="/chat" method="get">
-              <input type="text" name="input" placeholder="Ask something about astronomy..." style="width: 80%; padding: 8px;">
-              <button type="submit" style="padding: 8px 15px; background-color: #3d5afe; color: white; border: none; border-radius: 4px;">Ask</button>
+            <form method="POST" action="/chat">
+              <input type="text" name="input" placeholder="Ask something about astronomy..." />
+              <button type="submit">Ask</button>
             </form>
+            
+            <p><a href="/history">View Chat History</a></p>
+            
+            $responseSection
+            
+            <h2>Example queries:</h2>
+            <ul>
+              <li>Tell me about Mars</li>
+              <li>List all planets</li>
+              <li>Give me a fact about black holes</li>
+              <li>Start an astronomy quiz</li>
+            </ul>
             
             <div class="footer">
               <p>Astronomy Chatbot - Educational Project</p>
@@ -378,212 +303,200 @@ object WebServer {
         </body>
       </html>
     """
+  }
 
-    val interactiveJS = """
-    document.addEventListener('DOMContentLoaded', function() {
-      const container = document.querySelector('body');
-      for (let i = 0; i < 50; i++) {
-        const star = document.createElement('div');
-        star.classList.add('star');
-        star.style.left = Math.random() * 100 + 'vw';
-        star.style.top = Math.random() * 100 + 'vh';
-        star.style.animationDelay = Math.random() * 3 + 's';
-        container.appendChild(star);
-      }
-      const shootingStar1 = document.createElement('div');
-      shootingStar1.classList.add('shooting-star');
-      container.appendChild(shootingStar1);
-      const shootingStar2 = document.createElement('div');
-      shootingStar2.classList.add('shooting-star');
-      container.appendChild(shootingStar2);
-      const planet = document.createElement('div');
-      planet.classList.add('planet');
-      planet.style.right = '-50px';
-      planet.style.top = '100px';
-      planet.style.width = '200px';
-      planet.style.height = '200px';
-      planet.style.borderRadius = '50%';
-      planet.style.background = 'radial-gradient(circle at 40% 40%, rgba(100, 160, 255, 0.3), rgba(10, 14, 42, 0) 70%)';
-      container.appendChild(planet);
+  def renderHistoryPage(): String = {
+    val historySection = if (chatHistory.isEmpty) {
+      "<p>No chat history available.</p>"
+    } else {
+      chatHistory.map { case (query, response) =>
+        s"""
+          <div class="history-entry">
+            <p><strong>Query:</strong> $query</p>
+            <p><strong>Response:</strong> $response</p>
+          </div>
+        """
+      }.mkString
+    }
 
-      const input = document.getElementById('chat-input');
-      const sendButton = document.getElementById('send-button');
-      const messagesDiv = document.getElementById('chat-messages');
-      const loading = document.getElementById('loading');
-      let currentQuestionId = null;
+    s"""
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Astronomy Chatbot - Chat History</title>
+          <style>$starryThemeCSS</style>
+        </head>
+        <body>
+          <div class="container">
+            <pre style="color: cyan;">=======================================</pre>
+            <pre style="color: yellow;">    CHATURN Astronomy Chatbot</pre>
+            <pre style="color: cyan;">=======================================</pre>
+            <pre style="color: yellow;">Team:</pre><pre style="color: white;"> Chaturn</pre>
+            <pre style="color: yellow;">Members:</pre><pre style="color: white;"> Mohamed, Dania, Maroska, Jana</pre>
+            <h1>🔭 Chat History 🪐</h1>
+            <p>View your last 5 interactions with the Astronomy Chatbot.</p>
+            
+            $historySection
+            
+            <p><a href="/">Back to Chat</a></p>
+            
+            <div class="footer">
+              <p>Astronomy Chatbot - Educational Project</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    """
+  }
 
-      function addMessage(text, isUser) {
-        const message = document.createElement('div');
-        message.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
-        message.textContent = text;
-        messagesDiv.appendChild(message);
-        messagesDiv.scrollTop = messagesDiv.scrollHeight;
-      }
+  def main(args: Array[String]): Unit = {
+    implicit val system           = ActorSystem(Behaviors.empty, "ChatbotSystem")
+    implicit val executionContext = system.executionContext
 
-      async function sendMessage() {
-        const message = input.value.trim();
-        if (!message) return;
-
-        addMessage(message, true);
-        input.value = '';
-        loading.classList.add('active');
-
-        try {
-          if (message.toLowerCase().includes('quiz') || currentQuestionId) {
-            if (currentQuestionId) {
-              const response = await fetch(`/api/quiz?questionId=${encodeURIComponent(currentQuestionId)}&answer=${encodeURIComponent(message)}`);
-              const data = await response.json();
-              addMessage(`${data.feedback} ${data.correct ? 'Correct!' : 'Incorrect.'}`, false);
-              currentQuestionId = null;
-            }
-            const response = await fetch('/api/quiz?start=true');
-            const data = await response.json();
-            addMessage(`${data.text} Options: ${data.options.join(', ')}`, false);
-            currentQuestionId = data.id;
-          } else {
-            const response = await fetch(`/api/chat?input=${encodeURIComponent(message)}`);
-            const data = await response.json();
-            addMessage(data.response || data.error || 'Something went wrong.', false);
-          }
-        } catch (error) {
-          addMessage('Error connecting to the cosmos. Try again!', false);
-        } finally {
-          loading.classList.remove('active');
-          messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        }
-      }
-
-      input.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') sendMessage();
-      });
-
-      sendButton.addEventListener('click', sendMessage);
-    });
-  """
+    val config      = Config.load
+    val dataSource  = new AstronomyData(config)
+    val analytics   = new Analytics()
+    val inputParser = new InputParser()
+    val quizManager = new QuizManager()
+    val responder   = new Responder(dataSource, null, analytics, quizManager) // Null for PlanetApiClient
+    val quizHandler = new QuizHandler()
 
     val route =
-      path("chat") {
-        get {
-          parameter("input") { input =>
-            inputParser.parseInput(input) match {
-              case Right(command) =>
-                analytics.logInteraction(command)
-                val response = responder.respond(command).getOrElse("message", "No response available.")
-                complete(
-                  HttpEntity(
-                    ContentTypes.`text/html(UTF-8)`,
-                    s"""
-                    <!DOCTYPE html>
-                    <html>
-                      <head>
-                        <title>Astronomy Chatbot</title>
-                        <style>$starryThemeCSS</style>
-                      </head>
-                      <body>
-                        <div class="container">
-                          <h1>🔭 Astronomy Chatbot 🪐</h1>
-                          <p><strong>Your query:</strong> $input</p>
-                          <p><strong>Response:</strong> $response</p>
-                          <p><a href="/">Back to home</a></p>
-                        </div>
-                      </body>
-                    </html>
-                    """
-                  )
-                )
-              case Left(error) =>
-                complete(
-                  StatusCodes.BadRequest,
-                  HttpEntity(
-                    ContentTypes.`text/html(UTF-8)`,
-                    s"""
-                      <!DOCTYPE html>
-                      <html>
-                        <head>
-                          <title>Astronomy Chatbot - Error</title>
-                          <style>$starryThemeCSS</style>
-                        </head>
-                        <body>
-                          <div class="container">
-                            <h1>🔭 Astronomy Chatbot 🪐</h1>
-                            <p>Error: $error</p>
-                            <p>Please try again with a valid query.</p>
-                            <p><a href="/">Back to home</a></p>
-                          </div>
-                        </body>
-                      </html>
-                    """
-                  )
-                )
-            }
+      path("set-name") {
+        post {
+          formField("name") { name =>
+            userName = Some(name.trim.take(50))
+            complete(
+              HttpEntity(
+                ContentTypes.`text/html(UTF-8)`,
+                renderPage(response = Some(s"Welcome, $name! How can I help you explore the cosmos?"))
+              )
+            )
           }
         }
       } ~
-        path("quiz") {
-          get {
-            parameter("start".as[Boolean].optional) { startQuiz =>
-              if (startQuiz.getOrElse(false)) {
-                val question = quizManager.startQuiz()
-                complete(
-                  HttpEntity(
-                    ContentTypes.`text/html(UTF-8)`,
-                    s"""
-                  <!DOCTYPE html>
-                  <html>
-                    <head>
-                      <title>Astronomy Quiz</title>
-                      <style>$starryThemeCSS</style>
-                    </head>
-                    <body>
-                      <div class="container">
-                        <h1>🔭 Astronomy Quiz 🪐</h1>
-                        <p>${question.text}</p>
-                        <form action="/quiz" method="get">
-                          <input type="hidden" name="questionId" value="${question.id}">
-                          <input type="text" name="answer" placeholder="Type your answer..." style="width: 80%; padding: 8px;">
-                          <button type="submit" style="padding: 8px 15px; background-color: #3d5afe; color: white; border: none; border-radius: 4px;">Submit</button>
-                        </form>
-                        <p><a href="/">Back to home</a></p>
-                      </div>
-                    </body>
-                  </html>
-                  """
-                  )
-                )
-              } else {
-                parameters("questionId", "answer") { (questionId, answer) =>
-                  val result = quizManager.checkAnswer(questionId, answer)
+        path("chat") {
+          post {
+            formField("input") { input =>
+              inputParser.parseInput(input, quizHandler.isQuizActive()) match {
+                case Right(command) =>
+                  val response = command match {
+                    case chatbot.parser.AST.Command.StartQuiz =>
+                      quizActive = true
+                      quizHandler.handleMessage(input)
+                    case _ =>
+                      if (quizHandler.isQuizActive()) {
+                        quizHandler.handleMessage(input)
+                      } else {
+                        responder.respond(command).getOrElse("message", "No response available.")
+                      }
+                  }
+                  addToHistory(input, response)
+                  currentQuestion = if (quizHandler.isQuizActive()) {
+                    quizManager.getCurrentQuestion()
+                  } else {
+                    None
+                  }
                   complete(
                     HttpEntity(
                       ContentTypes.`text/html(UTF-8)`,
-                      s"""
-                    <!DOCTYPE html>
-                    <html>
-                      <head>
-                        <title>Astronomy Quiz</title>
-                        <style>$starryThemeCSS</style>
-                      </head>
-                      <body>
-                        <div class="container">
-                          <h1>🔭 Astronomy Quiz 🪐</h1>
-                          <p>${result.feedback}</p>
-                          <p>${if (result.correct) "Correct!" else "Incorrect. Try again!"}</p>
-                          <p><a href="/quiz?start=true">Next question</a></p>
-                          <p><a href="/">Back to home</a></p>
-                        </div>
-                      </body>
-                    </html>
-                    """
+                      renderPage(
+                        Some(input),
+                        Some(response),
+                        quizActive,
+                        None,
+                        currentQuestion
+                      )
                     )
                   )
-                }
+                case Left(error) =>
+                  addToHistory(input, s"Error: $error")
+                  complete(
+                    HttpEntity(ContentTypes.`text/html(UTF-8)`, renderPage(Some(input), Some(s"Error: $error")))
+                  )
               }
             }
           }
         } ~
+        path("answer-quiz") {
+          post {
+            formFields("questionId", "answer") { (questionId, answer) =>
+              val response = quizHandler.handleMessage(answer)
+              currentQuestion = quizManager.getCurrentQuestion()
+              quizActive = quizHandler.isQuizActive()
+              addToHistory(s"Quiz answer: $answer", response)
+              complete(
+                HttpEntity(
+                  ContentTypes.`text/html(UTF-8)`,
+                  renderPage(
+                    Some(s"Answer: $answer"),
+                    Some(response),
+                    quizActive,
+                    None,
+                    currentQuestion
+                  )
+                )
+              )
+            }
+          }
+        } ~
+        path("continue-quiz") {
+          post {
+            formField("action") { action =>
+              val (message, quizActiveAfter, questionOpt, summaryOpt) = action match {
+                case "next" =>
+                  val nextQuestion = quizManager.nextQuestion()
+                  (
+                    nextQuestion.map(q => s"Next question: ${q.text}").getOrElse("No more questions."),
+                    nextQuestion.isDefined,
+                    nextQuestion,
+                    None
+                  )
+                case "skip" =>
+                  val nextQuestion = quizManager.nextQuestion()
+                  (
+                    nextQuestion.map(q => s"Skipped to: ${q.text}").getOrElse("No more questions."),
+                    nextQuestion.isDefined,
+                    nextQuestion,
+                    None
+                  )
+                case "end" =>
+                  val summary = quizManager.getQuizSummary()
+                  quizManager.resetQuiz()
+                  (
+                    s"Quiz ended. $summary",
+                    false,
+                    None,
+                    Some(summary)
+                  )
+                case _ =>
+                  (
+                    "Unknown action.",
+                    quizActive,
+                    currentQuestion,
+                    None
+                  )
+              }
+              currentQuestion = questionOpt
+              quizActive = quizActiveAfter
+              addToHistory(action, message)
+              complete(
+                HttpEntity(
+                  ContentTypes.`text/html(UTF-8)`,
+                  renderPage(None, Some(message), quizActive, summaryOpt, questionOpt)
+                )
+              )
+            }
+          }
+        } ~
+        path("history") {
+          get {
+            complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, renderHistoryPage()))
+          }
+        } ~
         pathEndOrSingleSlash {
           get {
-            complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, welcomeHTML))
+            complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, renderPage()))
           }
         } ~
         path("static" / Remaining) { file =>

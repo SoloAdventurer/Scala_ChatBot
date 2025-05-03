@@ -4,13 +4,13 @@ import chatbot.parser.AST.Command
 import chatbot.parser.AST.Command._
 import chatbot.data.{AstronomyData, PlanetApiClient}
 import chatbot.analytics.Analytics
+import chatbot.quiz.QuizManager
 import scala.util.Random
+import scala.util.control.NonFatal
 
-class Responder(dataSource: AstronomyData, apiClient: PlanetApiClient, analytics: Analytics) {
-  // Store user's recent topics to personalize responses
+class Responder(dataSource: AstronomyData, apiClient: PlanetApiClient, analytics: Analytics, quizManager: QuizManager) {
   private var recentTopics = List.empty[String]
 
-  // Greeting variations
   private val greetings = List(
     "Hello there! How can I help with your astronomy questions today?",
     "Hi! I'm your astronomy assistant. What would you like to know about the cosmos?",
@@ -19,7 +19,6 @@ class Responder(dataSource: AstronomyData, apiClient: PlanetApiClient, analytics
     "Hey there! Ready to explore the stars together? What's on your mind?"
   )
 
-  // Help message variations
   private val helpMessages = List(
     """I'm your astronomy guide! You can:
       |• Ask about celestial bodies: "Tell me about Jupiter"
@@ -41,13 +40,11 @@ class Responder(dataSource: AstronomyData, apiClient: PlanetApiClient, analytics
       |• "Tell me about black holes"
       |• "Compare Jupiter and Saturn"
       |• "List galaxies"
-      |• "Random fact"
-      |• "Start quiz"
+      |• "Random fact" | "Start quiz"
       |• "Exit"
       |What part of the universe shall we explore?""".stripMargin
   )
 
-  // Unknown command variations
   private val unknownResponses = List(
     "I'm not sure what you mean. Try rephrasing or use 'help' to see options.",
     "That's outside my orbit! Ask about planets, stars, or try 'help'.",
@@ -56,7 +53,6 @@ class Responder(dataSource: AstronomyData, apiClient: PlanetApiClient, analytics
     "Lost in space! Try asking differently or use 'help'."
   )
 
-  // Enthusiasm indicators
   private val enthusiasticPhrases = List(
     "Fascinating! ",
     "Amazing! ",
@@ -68,7 +64,6 @@ class Responder(dataSource: AstronomyData, apiClient: PlanetApiClient, analytics
     "You might be surprised to learn that "
   )
 
-  // Follow-up suggestions
   private def getFollowUpSuggestion(topic: String): String = {
     val suggestions = List(
       s"Would you like to know more about $topic?",
@@ -80,7 +75,6 @@ class Responder(dataSource: AstronomyData, apiClient: PlanetApiClient, analytics
     Random.shuffle(suggestions).head
   }
 
-  // Personalization based on user history
   private def personalizeResponse(response: String, topic: Option[String] = None): String = {
     topic.foreach(t => recentTopics = (t :: recentTopics).distinct.take(5))
     if (recentTopics.nonEmpty && Random.nextDouble() < 0.3) {
@@ -98,25 +92,21 @@ class Responder(dataSource: AstronomyData, apiClient: PlanetApiClient, analytics
     }
   }
 
-  // Helper for variations
-  private def getVariation[T](items: List[T]): T = {
-    items(Random.nextInt(items.size))
-  }
-
-  // Add follow-up question
   private def maybeAddFollowUp(response: String, topic: Option[String] = None): String = {
     if (Random.nextDouble() < 0.4) {
       val followUp = topic match {
         case Some(t) => getFollowUpSuggestion(t)
         case None =>
-          getVariation(
-            List(
-              "What else would you like to know?",
-              "Anything else you're curious about?",
-              "What other cosmic mysteries should we explore?",
-              "Any other astronomy questions?"
+          Random
+            .shuffle(
+              List(
+                "What else would you like to know?",
+                "Anything else you're curious about?",
+                "What other cosmic mysteries should we explore?",
+                "Any other astronomy questions?"
+              )
             )
-          )
+            .head
       }
       s"$response\n\n$followUp"
     } else {
@@ -124,17 +114,18 @@ class Responder(dataSource: AstronomyData, apiClient: PlanetApiClient, analytics
     }
   }
 
-  // Format facts
   private def formatFacts(facts: Map[String, String], topic: String): String = {
     if (facts.isEmpty)
-      return s"I don't have much info about $topic. Try another topic!"
-    val intro = getVariation(
-      List(
-        s"Here's what I know about $topic:",
-        s"Let me tell you about $topic:",
-        s"$topic is fascinating! Here's what I know:"
+      return s"I don't have much info about $topic. Try another topic or check back later!"
+    val intro = Random
+      .shuffle(
+        List(
+          s"Here's what I know about $topic:",
+          s"Let me tell you about $topic:",
+          s"$topic is fascinating! Here's what I know:"
+        )
       )
-    )
+      .head
     val formattedFacts = facts
       .map { case (k, v) =>
         val readableKey = k.replaceAll("([A-Z])", " $1").replaceAll("_", " ").trim.toLowerCase.capitalize
@@ -144,20 +135,21 @@ class Responder(dataSource: AstronomyData, apiClient: PlanetApiClient, analytics
     s"$intro\n$formattedFacts"
   }
 
-  // Generate natural comparison
   private def generateNaturalComparison(
     entity1: String,
     entity2: String,
     facts1: Map[String, String],
     facts2: Map[String, String]
   ): String = {
-    val intro = getVariation(
-      List(
-        s"Let's compare $entity1 and $entity2:",
-        s"Here's how $entity1 stacks up against $entity2:",
-        s"Comparing $entity1 and $entity2:"
+    val intro = Random
+      .shuffle(
+        List(
+          s"Let's compare $entity1 and $entity2:",
+          s"Here's how $entity1 stacks up against $entity2:",
+          s"Comparing $entity1 and $entity2:"
+        )
       )
-    )
+      .head
     val commonKeys = facts1.keySet.intersect(facts2.keySet)
     val keysToPrioritize =
       List("diameter", "mass", "distance_from_sun", "orbital_period", "rotation_period", "surface_temperature")
@@ -177,211 +169,312 @@ class Responder(dataSource: AstronomyData, apiClient: PlanetApiClient, analytics
 
   def respond(command: Command): Map[String, String] = {
     analytics.logInteraction(command)
-    val response = command match {
-      case Exit =>
-        Map(
-          "message" -> getVariation(
-            List(
-              "Goodbye! May the stars light your way!",
-              "Farewell, explorer! Come back soon.",
-              "Safe travels through the cosmos!"
-            )
+    try {
+      val response = command match {
+        case Exit =>
+          Map(
+            "message" -> Random
+              .shuffle(
+                List(
+                  "Goodbye! May the stars light your way!",
+                  "Farewell, explorer! Come back soon.",
+                  "Safe travels through the cosmos!"
+                )
+              )
+              .head
           )
-        )
 
-      case Greet =>
-        Map("message" -> personalizeResponse(getVariation(greetings)))
+        case Greet =>
+          Map("message" -> personalizeResponse(Random.shuffle(greetings).head))
 
-      case Help =>
-        Map("message" -> personalizeResponse(getVariation(helpMessages)))
+        case Help =>
+          Map("message" -> personalizeResponse(Random.shuffle(helpMessages).head))
 
-      case PlanetInfo(planet) =>
-        val normalizedPlanet = planet.trim.toLowerCase.capitalize
-        val facts = dataSource
-          .getFacts(normalizedPlanet)
-          .orElse(apiClient.getPlanetData(normalizedPlanet.toLowerCase))
-          .getOrElse(Map.empty)
-        Map("message" -> maybeAddFollowUp(formatFacts(facts, normalizedPlanet), Some(normalizedPlanet)))
+        case PlanetInfo(planet) =>
+          val normalizedPlanet = planet.trim.toLowerCase.capitalize
+          val facts =
+            try {
+              dataSource.getFacts(normalizedPlanet).getOrElse(Map.empty)
+            } catch {
+              case NonFatal(e) =>
+                println(s"Error fetching facts for $normalizedPlanet: ${e.getMessage}")
+                Map.empty
+            }
+          Map("message" -> maybeAddFollowUp(formatFacts(facts, normalizedPlanet), Some(normalizedPlanet)))
 
-      case StarInfo(star) =>
-        val normalizedStar = star.trim.toLowerCase.capitalize
-        val facts          = dataSource.getFacts(normalizedStar).getOrElse(Map.empty)
-        Map("message" -> maybeAddFollowUp(formatFacts(facts, normalizedStar), Some(normalizedStar)))
+        case StarInfo(star) =>
+          val normalizedStar = star.trim.toLowerCase.capitalize
+          val facts =
+            try {
+              dataSource.getFacts(normalizedStar).getOrElse(Map.empty)
+            } catch {
+              case NonFatal(e) =>
+                println(s"Error fetching facts for $normalizedStar: ${e.getMessage}")
+                Map.empty
+            }
+          Map("message" -> maybeAddFollowUp(formatFacts(facts, normalizedStar), Some(normalizedStar)))
 
-      case ConstellationInfo(constellation) =>
-        val normalizedConstellation = constellation.trim.toLowerCase.capitalize
-        val facts                   = dataSource.getFacts(normalizedConstellation).getOrElse(Map.empty)
-        Map("message" -> maybeAddFollowUp(formatFacts(facts, normalizedConstellation), Some(normalizedConstellation)))
+        case ConstellationInfo(constellation) =>
+          val normalizedConstellation = constellation.trim.toLowerCase.capitalize
+          val facts =
+            try {
+              dataSource.getFacts(normalizedConstellation).getOrElse(Map.empty)
+            } catch {
+              case NonFatal(e) =>
+                println(s"Error fetching facts for $normalizedConstellation: ${e.getMessage}")
+                Map.empty
+            }
+          Map("message" -> maybeAddFollowUp(formatFacts(facts, normalizedConstellation), Some(normalizedConstellation)))
 
-      case Distance(object1, object2) =>
-        val normalized1 = object1.trim.toLowerCase.capitalize
-        val normalized2 = object2.trim.toLowerCase.capitalize
-        recentTopics = (List(normalized1, normalized2) ++ recentTopics).distinct.take(5)
-        Map(
-          "message" -> getVariation(
-            List(
-              s"Distance between $normalized1 and $normalized2 varies due to orbits. Would you like info on either?",
-              s"Calculating exact distance between $normalized1 and $normalized2 is complex. Want details on one?"
-            )
+        case Distance(object1, object2) =>
+          val normalized1 = object1.trim.toLowerCase.capitalize
+          val normalized2 = object2.trim.toLowerCase.capitalize
+          recentTopics = (List(normalized1, normalized2) ++ recentTopics).distinct.take(5)
+          Map(
+            "message" -> Random
+              .shuffle(
+                List(
+                  s"Distance between $normalized1 and $normalized2 varies due to orbits. Would you like info on either?",
+                  s"Calculating exact distance between $normalized1 and $normalized2 is complex. Want details on one?"
+                )
+              )
+              .head
           )
-        )
 
-      case PropertyQuery(objectName, property) =>
-        val normalizedObject = objectName.trim.toLowerCase.capitalize
-        val facts = dataSource
-          .getFacts(normalizedObject)
-          .orElse(apiClient.getPlanetData(normalizedObject.toLowerCase))
-          .getOrElse(Map.empty)
-        val message = facts.get(property.toLowerCase.replace(" ", "_")) match {
-          case Some(value) => s"$normalizedObject's $property is $value."
-          case None        => s"I don't have info on $normalizedObject's $property. Try another property or topic."
-        }
-        Map("message" -> maybeAddFollowUp(personalizeResponse(message, Some(normalizedObject)), Some(normalizedObject)))
-
-      case AstronomicalEvent(query) =>
-        Map(
-          "message" -> getVariation(
-            List(
-              s"I don't have details on '$query' yet. Try asking about planets or stars!",
-              s"Info on '$query' isn't available. Want to explore another topic?"
-            )
+        case PropertyQuery(objectName, property) =>
+          val normalizedObject = objectName.trim.toLowerCase.capitalize
+          val facts =
+            try {
+              dataSource.getFacts(normalizedObject).getOrElse(Map.empty)
+            } catch {
+              case NonFatal(e) =>
+                println(s"Error fetching facts for $normalizedObject: ${e.getMessage}")
+                Map.empty
+            }
+          val message = facts.get(property.toLowerCase.replace(" ", "_")) match {
+            case Some(value) => s"$normalizedObject's $property is $value."
+            case None        => s"I don't have info on $normalizedObject's $property. Try another property or topic."
+          }
+          Map(
+            "message" -> maybeAddFollowUp(personalizeResponse(message, Some(normalizedObject)), Some(normalizedObject))
           )
-        )
 
-      case FunFact(topic) =>
-        val normalizedTopic = topic.trim.toLowerCase.capitalize
-        val allFacts = dataSource
-          .getFacts(normalizedTopic)
-          .orElse(apiClient.getPlanetData(normalizedTopic.toLowerCase))
-          .toList
-          .flatMap(_.values)
-        val message = if (allFacts.isEmpty) {
-          s"No fun facts about $normalizedTopic yet. Try another topic!"
-        } else {
-          getVariation(
-            List(
-              s"Fun fact about $normalizedTopic: ",
-              s"Here's something cool about $normalizedTopic: "
-            )
-          ) + allFacts(Random.nextInt(allFacts.size))
-        }
-        Map("message" -> maybeAddFollowUp(personalizeResponse(message, Some(normalizedTopic)), Some(normalizedTopic)))
-
-      case NightSkyInfo(query) =>
-        Map(
-          "message" -> getVariation(
-            List(
-              s"I can't provide night sky info for '$query' yet. Try asking about planets or constellations!",
-              s"No night sky data for '$query'. Want info on another topic?"
-            )
+        case AstronomicalEvent(query) =>
+          Map(
+            "message" -> Random
+              .shuffle(
+                List(
+                  s"I don't have details on '$query' yet. Try asking about planets or stars!",
+                  s"Info on '$query' isn't available. Want to explore another topic?"
+                )
+              )
+              .head
           )
-        )
 
-      case ListPlanets =>
-        val planets = dataSource.getPlanets
-        val message = if (planets.isEmpty) {
-          "My planetary database is empty. I should know about our solar system's planets!"
-        } else {
-          getVariation(
-            List(
-              "Our solar system's planets: ",
-              "The eight planets are: "
-            )
-          ) + planets.mkString(", ")
-        }
-        Map("message" -> personalizeResponse(message))
+        case FunFact(topic) =>
+          val normalizedTopic = topic.trim.toLowerCase.capitalize
+          val allFacts =
+            try {
+              dataSource.getFacts(normalizedTopic).toList.flatMap(_.values)
+            } catch {
+              case NonFatal(e) =>
+                println(s"Error fetching facts for $normalizedTopic: ${e.getMessage}")
+                List.empty
+            }
+          val message = if (allFacts.isEmpty) {
+            s"No fun facts about $normalizedTopic yet. Try another topic!"
+          } else {
+            Random
+              .shuffle(
+                List(
+                  s"Fun fact about $normalizedTopic: ",
+                  s"Here's something cool about $normalizedTopic: "
+                )
+              )
+              .head + allFacts(Random.nextInt(allFacts.size))
+          }
+          Map("message" -> maybeAddFollowUp(personalizeResponse(message, Some(normalizedTopic)), Some(normalizedTopic)))
 
-      case ListCategory(category) =>
-        val normalizedCategory = category.toLowerCase
-        val items = normalizedCategory match {
-          case "planets"        => dataSource.getPlanets
-          case "stars"          => List("Sun", "Sirius", "Alpha Centauri", "Betelgeuse", "Vega", "Proxima Centauri")
-          case "constellations" => List("Orion", "Big Dipper", "Cassiopeia", "Leo", "Scorpius", "Taurus")
-          case "galaxies"       => List("Milky Way", "Andromeda", "Triangulum", "Sombrero", "Whirlpool")
-          case "black holes"    => List("Sagittarius A*", "Cygnus X-1", "M87 Black Hole", "TON 618")
-          case "moons" => List("Luna (Earth)", "Phobos (Mars)", "Io (Jupiter)", "Europa (Jupiter)", "Titan (Saturn)")
-          case "dwarf planets" => List("Pluto", "Ceres", "Eris", "Haumea", "Makemake")
-          case _               => List(s"No items found for '$normalizedCategory'")
-        }
-        val message = getVariation(
-          List(
-            s"${normalizedCategory.capitalize}: ",
-            s"List of $normalizedCategory: "
+        case NightSkyInfo(query) =>
+          Map(
+            "message" -> Random
+              .shuffle(
+                List(
+                  s"I can't provide night sky info for '$query' yet. Try asking about planets or constellations!",
+                  s"No night sky data for '$query'. Want info on another topic?"
+                )
+              )
+              .head
           )
-        ) + items.mkString(", ")
-        Map("message" -> personalizeResponse(message))
 
-      case RandomFact =>
-        val allFacts = dataSource.getPlanets.flatMap(dataSource.getFacts).flatMap(_.values)
-        val message = if (allFacts.isEmpty) {
-          "My fact database is empty. Try asking about specific planets!"
-        } else {
-          getVariation(
-            List(
-              "Here's a cool space fact: ",
-              "Did you know? "
-            )
-          ) + allFacts(Random.nextInt(allFacts.size))
-        }
-        Map("message" -> maybeAddFollowUp(personalizeResponse(message)))
+        case ListPlanets =>
+          val planets =
+            try {
+              dataSource.getPlanets
+            } catch {
+              case NonFatal(e) =>
+                println(s"Error fetching planets: ${e.getMessage}")
+                List.empty
+            }
+          val message = if (planets.isEmpty) {
+            "My planetary database is empty. I should know about our solar system's planets!"
+          } else {
+            Random
+              .shuffle(
+                List(
+                  "Our solar system's planets: ",
+                  "The eight planets are: "
+                )
+              )
+              .head + planets.mkString(", ")
+          }
+          Map("message" -> personalizeResponse(message))
 
-      case AskAbout(topic) =>
-        val normalizedTopic = topic.trim.toLowerCase.capitalize
-        val facts = dataSource
-          .getFacts(normalizedTopic)
-          .orElse(apiClient.getPlanetData(normalizedTopic.toLowerCase))
-        val message = facts match {
-          case Some(f) => formatFacts(f, normalizedTopic)
-          case None =>
-            getVariation(
+        case ListCategory(category) =>
+          val normalizedCategory = category.toLowerCase
+          val items = normalizedCategory match {
+            case "planets" =>
+              try {
+                dataSource.getPlanets
+              } catch {
+                case NonFatal(e) =>
+                  println(s"Error fetching planets: ${e.getMessage}")
+                  List.empty
+              }
+            case "stars"          => List("Sun", "Sirius", "Alpha Centauri", "Betelgeuse", "Vega", "Proxima Centauri")
+            case "constellations" => List("Orion", "Big Dipper", "Cassiopeia", "Leo", "Scorpius", "Taurus")
+            case "galaxies"       => List("Milky Way", "Andromeda", "Triangulum", "Sombrero", "Whirlpool")
+            case "black holes"    => List("Sagittarius A*", "Cygnus X-1", "M87 Black Hole", "TON 618")
+            case "moons" => List("Luna (Earth)", "Phobos (Mars)", "Io (Jupiter)", "Europa (Jupiter)", "Titan (Saturn)")
+            case "dwarf planets" => List("Pluto", "Ceres", "Eris", "Haumea", "Makemake")
+            case _               => List(s"No items found for '$normalizedCategory'")
+          }
+          val message = Random
+            .shuffle(
               List(
-                s"I don't have info on $normalizedTopic. Try planets or stars!",
-                s"$normalizedTopic isn't in my database. Want to explore another topic?"
+                s"${normalizedCategory.capitalize}: ",
+                s"List of $normalizedCategory: "
               )
             )
-        }
-        Map("message" -> maybeAddFollowUp(personalizeResponse(message, Some(normalizedTopic)), Some(normalizedTopic)))
+            .head + items.mkString(", ")
+          Map("message" -> personalizeResponse(message))
 
-      case Compare(topic1, topic2) =>
-        val normalized1 = topic1.trim.toLowerCase.capitalize
-        val normalized2 = topic2.trim.toLowerCase.capitalize
-        recentTopics = (List(normalized1, normalized2) ++ recentTopics).distinct.take(5)
-        val facts1 = dataSource
-          .getFacts(normalized1)
-          .orElse(apiClient.getPlanetData(normalized1.toLowerCase))
-          .getOrElse(Map.empty)
-        val facts2 = dataSource
-          .getFacts(normalized2)
-          .orElse(apiClient.getPlanetData(normalized2.toLowerCase))
-          .getOrElse(Map.empty)
-        val message = (facts1.nonEmpty, facts2.nonEmpty) match {
-          case (true, true)   => generateNaturalComparison(normalized1, normalized2, facts1, facts2)
-          case (true, false)  => s"I only have info on $normalized1. Want to learn more about it?"
-          case (false, true)  => s"I only have info on $normalized2. Want to learn more about it?"
-          case (false, false) => s"I don't have enough info to compare $normalized1 and $normalized2."
-        }
-        Map("message" -> personalizeResponse(message))
+        case RandomFact =>
+          val allFacts =
+            try {
+              dataSource.getPlanets.flatMap(dataSource.getFacts).flatMap(_.values)
+            } catch {
+              case NonFatal(e) =>
+                println(s"Error fetching random facts: ${e.getMessage}")
+                List.empty
+            }
+          val message = if (allFacts.isEmpty) {
+            "My fact database is empty. Try asking about specific planets!"
+          } else {
+            Random
+              .shuffle(
+                List(
+                  "Here's a cool space fact: ",
+                  "Did you know? "
+                )
+              )
+              .head + allFacts(Random.nextInt(allFacts.size))
+          }
+          Map("message" -> maybeAddFollowUp(personalizeResponse(message)))
 
-      case StartQuiz =>
-        Map("message" -> "Starting a quiz! Please wait for the question.")
+        case AskAbout(topic) =>
+          val normalizedTopic = topic.trim.toLowerCase.capitalize
+          val facts =
+            try {
+              dataSource.getFacts(normalizedTopic).getOrElse(Map.empty)
+            } catch {
+              case NonFatal(e) =>
+                println(s"Error fetching facts for $normalizedTopic: ${e.getMessage}")
+                Map.empty
+            }
+          val message = if (facts.nonEmpty) {
+            formatFacts(facts, normalizedTopic)
+          } else {
+            Random
+              .shuffle(
+                List(
+                  s"I don't have info on $normalizedTopic. Try planets, stars, or constellations!",
+                  s"$normalizedTopic isn't in my database. Want to explore another topic?"
+                )
+              )
+              .head
+          }
+          Map("message" -> maybeAddFollowUp(personalizeResponse(message, Some(normalizedTopic)), Some(normalizedTopic)))
 
-      case AnswerQuiz(answer) =>
-        Map("message" -> s"Your answer: $answer. Checking with the quiz system...")
+        case Compare(topic1, topic2) =>
+          val normalized1 = topic1.trim.toLowerCase.capitalize
+          val normalized2 = topic2.trim.toLowerCase.capitalize
+          recentTopics = (List(normalized1, normalized2) ++ recentTopics).distinct.take(5)
+          val facts1 =
+            try {
+              dataSource.getFacts(normalized1).getOrElse(Map.empty)
+            } catch {
+              case NonFatal(e) =>
+                println(s"Error fetching facts for $normalized1: ${e.getMessage}")
+                Map.empty
+            }
+          val facts2 =
+            try {
+              dataSource.getFacts(normalized2).getOrElse(Map.empty)
+            } catch {
+              case NonFatal(e) =>
+                println(s"Error fetching facts for $normalized2: ${e.getMessage}")
+                Map.empty
+            }
+          val message = (facts1.nonEmpty, facts2.nonEmpty) match {
+            case (true, true)   => generateNaturalComparison(normalized1, normalized2, facts1, facts2)
+            case (true, false)  => s"I only have info on $normalized1. Want to learn more about it?"
+            case (false, true)  => s"I only have info on $normalized2. Want to learn more about it?"
+            case (false, false) => s"I don't have enough info to compare $normalized1 and $normalized2."
+          }
+          Map("message" -> personalizeResponse(message))
 
-      case Unknown(input) =>
-        val inputLower = input.toLowerCase
-        val planets    = Vector("mercury", "venus", "earth", "mars", "jupiter", "saturn", "uranus", "neptune", "pluto")
-        val planetMatches = planets.filter(inputLower.contains)
-        val message = inputLower match {
-          case s if s.contains("thank")              => "You're welcome! What's next?"
-          case s if s.contains("hello") || s == "hi" => "Hi! I'm CHATURN, your astronomy bot. What's up?"
-          case s if s.contains("how are you")        => "Orbiting smoothly! What's your question?"
-          case s if s.contains("your name")          => "I'm CHATURN, your cosmic guide!"
-          case s if planetMatches.nonEmpty           => return respond(AskAbout(planetMatches.head))
-          case _                                     => getVariation(unknownResponses)
-        }
-        Map("message" -> message)
+        case StartQuiz =>
+          Map("message" -> "Starting a quiz! Get ready for the first question.", "quizActive" -> "true")
+
+        case AnswerQuiz(answer) =>
+          Map("message" -> s"Your answer: $answer. Checking with the quiz system...")
+
+        case Unknown(input) =>
+          val inputLower = input.toLowerCase
+          val planets = Vector("mercury", "venus", "earth", "mars", "jupiter", "saturn", "uranus", "neptune", "pluto")
+          val planetMatches = planets.filter(inputLower.contains)
+          val message = if (planetMatches.nonEmpty) {
+            val planet = planetMatches.head.capitalize
+            val facts =
+              try {
+                dataSource.getFacts(planet).getOrElse(Map.empty)
+              } catch {
+                case NonFatal(e) =>
+                  println(s"Error fetching facts for $planet: ${e.getMessage}")
+                  Map.empty
+              }
+            if (facts.nonEmpty) {
+              formatFacts(facts, planet)
+            } else {
+              s"I don't have info on $planet. Try another topic!"
+            }
+          } else {
+            inputLower match {
+              case s if s.contains("thank")              => "You're welcome! What's next?"
+              case s if s.contains("hello") || s == "hi" => "Hi! I'm CHATURN, your astronomy bot. What's up?"
+              case s if s.contains("how are you")        => "Orbiting smoothly! What's your question?"
+              case s if s.contains("your name")          => "I'm CHATURN, your cosmic guide!"
+              case _                                     => Random.shuffle(unknownResponses).head
+            }
+          }
+          Map("message" -> maybeAddFollowUp(message))
+      }
+      response
+    } catch {
+      case NonFatal(e) =>
+        println(s"Error processing command $command: ${e.getMessage}")
+        Map("message" -> "Sorry, something went wrong while processing your request. Try again or ask something else!")
     }
-    response
   }
 }

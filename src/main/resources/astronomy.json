@@ -99,6 +99,28 @@
         "mass": "1.303e22 kg"
     },
     {
+        "name": "Eris",
+        "type": "dwarf planet",
+        "distance_from_sun": "10.1 billion km (average)",
+        "orbital_period": "557 Earth years",
+        "rotation_period": "25.9 hours",
+        "surface_temperature": "-243 C (average)",
+        "atmosphere": "Possible thin methane atmosphere",
+        "diameter": "2326 km",
+        "mass": "1.66e22 kg"
+    },
+    {
+        "name": "Haumea",
+        "type": "dwarf planet",
+        "distance_from_sun": "6.4 billion km (average)",
+        "orbital_period": "283 Earth years",
+        "rotation_period": "3.9 hours",
+        "surface_temperature": "-241 C (average)",
+        "atmosphere": "None detected",
+        "diameter": "1632 km (average, elongated shape)",
+        "mass": "4.01e21 kg"
+    },
+    {
         "name": "Sun",
         "type": "star",
         "diameter": "1.39 million km",
@@ -114,9 +136,34 @@
         "surface_temperature": "9940 C"
     },
     {
+        "name": "Betelgeuse",
+        "type": "star",
+        "distance_from_earth": "642.5 light-years",
+        "mass": "7.7e31 kg",
+        "surface_temperature": "3600 C",
+        "diameter": "1.2 billion km"
+    },
+    {
+        "name": "Vega",
+        "type": "star",
+        "distance_from_earth": "25 light-years",
+        "mass": "2.135e30 kg",
+        "surface_temperature": "9600 C"
+    },
+    {
         "name": "Orion",
         "type": "constellation",
         "description": "A prominent constellation known for Orion's Belt, containing stars like Betelgeuse and Rigel."
+    },
+    {
+        "name": "Cassiopeia",
+        "type": "constellation",
+        "description": "A W-shaped constellation in the northern sky, known for its bright stars and proximity to the North Star."
+    },
+    {
+        "name": "Scorpius",
+        "type": "constellation",
+        "description": "A zodiac constellation with a scorpion shape, featuring the bright star Antares."
     },
     {
         "name": "Milky Way",
@@ -125,10 +172,31 @@
         "star_count": "100-400 billion"
     },
     {
+        "name": "Andromeda",
+        "type": "galaxy",
+        "diameter": "220000 light-years",
+        "star_count": "1 trillion",
+        "distance_from_earth": "2.5 million light-years"
+    },
+    {
+        "name": "Triangulum",
+        "type": "galaxy",
+        "diameter": "60000 light-years",
+        "star_count": "40 billion",
+        "distance_from_earth": "2.7 million light-years"
+    },
+    {
         "name": "Sagittarius A*",
         "type": "black hole",
         "mass": "4.1 million solar masses",
         "location": "Center of the Milky Way"
+    },
+    {
+        "name": "M87 Black Hole",
+        "type": "black hole",
+        "mass": "6.5 billion solar masses",
+        "location": "Center of the M87 galaxy",
+        "distance_from_earth": "53 million light-years"
     },
     {
         "name": "Luna",
@@ -143,5 +211,94 @@
         "parent_planet": "Saturn",
         "diameter": "5150 km",
         "atmosphere": "Thicker than Earth's, mostly nitrogen"
+    },
+    {
+        "name": "Europa",
+        "type": "moon",
+        "parent_planet": "Jupiter",
+        "diameter": "3122 km",
+        "orbital_period": "3.55 days",
+        "surface": "Icy with possible subsurface ocean"
+    },
+    {
+        "name": "Ganymede",
+        "type": "moon",
+        "parent_planet": "Jupiter",
+        "diameter": "5268 km",
+        "orbital_period": "7.15 days",
+        "mass": "1.4819e23 kg"
+    },
+    {
+        "name": "Ceres",
+        "type": "asteroid",
+        "location": "Asteroid Belt between Mars and Jupiter",
+        "diameter": "946 km",
+        "mass": "9.39e20 kg",
+        "orbital_period": "4.6 Earth years"
+    },
+    {
+        "name": "Vesta",
+        "type": "asteroid",
+        "location": "Asteroid Belt between Mars and Jupiter",
+        "diameter": "525 km",
+        "mass": "2.59e20 kg",
+        "orbital_period": "3.63 Earth years"
+    },
+    {
+        "name": "Halley's Comet",
+        "type": "comet",
+        "orbital_period": "76 Earth years",
+        "last_perihelion": "1986",
+        "next_perihelion": "2061",
+        "composition": "Ice, dust, and rocky material"
+    },
+    {
+        "name": "Hale-Bopp",
+        "type": "comet",
+        "orbital_period": "2533 Earth years",
+        "last_perihelion": "1997",
+        "composition": "Ice, dust, and organic compounds"
+    },
+    {
+        "name": "Orion Nebula",
+        "type": "nebula",
+        "distance_from_earth": "1344 light-years",
+        "diameter": "24 light-years",
+        "description": "A star-forming region visible to the naked eye in Orion."
+    },
+    {
+        "name": "Crab Nebula",
+        "type": "nebula",
+        "distance_from_earth": "6500 light-years",
+        "diameter": "11 light-years",
+        "description": "A supernova remnant with a pulsar at its center."
+    },
+    {
+        "name": "Alpha Centauri",
+        "type": "star system",
+        "distance_from_earth": "4.37 light-years",
+        "components": "Three stars: Alpha Centauri A, B, and Proxima Centauri"
+    },
+    {
+        "name": "TRAPPIST-1",
+        "type": "star system",
+        "distance_from_earth": "39.6 light-years",
+        "components": "Seven Earth-sized exoplanets orbiting a red dwarf star"
+    },
+    {
+        "name": "Proxima Centauri b",
+        "type": "exoplanet",
+        "parent_star": "Proxima Centauri",
+        "distance_from_earth": "4.24 light-years",
+        "orbital_period": "11.2 Earth days",
+        "mass": "1.17 Earth masses (estimated)"
+    },
+    {
+        "name": "Kepler-186f",
+        "type": "exoplanet",
+        "parent_star": "Kepler-186",
+        "distance_from_earth": "582 light-years",
+        "orbital_period": "129.9 Earth days",
+        "description": "First Earth-sized exoplanet found in the habitable zone"
     }
 ]

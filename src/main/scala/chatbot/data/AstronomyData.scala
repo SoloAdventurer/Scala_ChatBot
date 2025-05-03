@@ -1,8 +1,9 @@
 package chatbot.data
 
 import chatbot.config.Config
-import upickle.default._
-import scala.util.{Try, Success, Failure}
+import io.circe._
+import io.circe.generic.semiauto._
+import io.circe.parser._
 
 case class CelestialObject(
   name: String,
@@ -23,7 +24,9 @@ case class CelestialObject(
 )
 
 object CelestialObject {
-  implicit val rw: ReadWriter[CelestialObject] = macroRW
+  // Circe decoders/encoders
+  implicit val decoder: Decoder[CelestialObject] = deriveDecoder[CelestialObject]
+  implicit val encoder: Encoder[CelestialObject] = deriveEncoder[CelestialObject]
 }
 
 class AstronomyData(config: Config) {
@@ -75,37 +78,24 @@ class AstronomyData(config: Config) {
       config.dataContent.take(previewLength) + (if (config.dataContent.length > previewLength) "..." else "")
     println(s"JSON content: $preview")
 
-    // Try to parse the JSON with more comprehensive error handling
-    Try {
-      read[List[CelestialObject]](config.dataContent)
-    } match {
-      case Success(parsed) =>
+    // Try to parse the JSON with Circe
+    decode[List[CelestialObject]](config.dataContent) match {
+      case Right(parsed) =>
         println(s"Successfully parsed ${parsed.length} celestial objects")
         parsed
-      case Failure(e) =>
-        val errorMessage = e.getMessage
-        println(s"Failed to parse astronomy.json: $errorMessage, using fallback data")
+      case Left(error) =>
+        println(s"Failed to parse astronomy.json: ${error.getMessage}, using fallback data")
 
         // More detailed error reporting
-        Try {
-          // Try to find the position in the error message
-          val indexPattern = "at index (\\d+)".r
-          val indexOption  = indexPattern.findFirstMatchIn(errorMessage).map(_.group(1).toInt)
-
-          indexOption.foreach { index =>
-            val contextStart   = Math.max(0, index - 40)
-            val contextEnd     = Math.min(config.dataContent.length, index + 40)
-            val errorContext   = config.dataContent.slice(contextStart, contextEnd)
-            val markerPosition = Math.min(40, index - contextStart)
-
-            // Show the error context with a marker
-            val beforeError = errorContext.substring(0, markerPosition)
-            val afterError  = errorContext.substring(markerPosition)
-            println(s"Error position: index $index")
-            println(s"Context: $beforeError >>> $afterError")
-          }
-        } recover { case e =>
-          println(s"Error while printing detailed error context: ${e.getMessage}")
+        error match {
+          case ParsingFailure(msg, underlying) =>
+            println(s"JSON parsing error: $msg")
+            println(s"Underlying exception: ${underlying.getMessage}")
+          case DecodingFailure(msg, history) =>
+            println(s"JSON decoding error: $msg")
+            println(s"Error path: ${history.mkString(" -> ")}")
+          case other =>
+            println(s"Unexpected error: ${other.getMessage}")
         }
 
         fallbackData
