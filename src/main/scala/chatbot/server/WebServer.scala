@@ -8,12 +8,11 @@ import akka.http.scaladsl.server.Directives._
 import chatbot.config.Config
 import chatbot.parser.InputParser
 import chatbot.responder.Responder
-import chatbot.quiz.QuizManager
+import chatbot.quiz.{QuizManager, QuizHandler}
 import chatbot.data.AstronomyData
 import chatbot.analytics.Analytics
 import scala.io.StdIn
 import scala.util.{Failure, Success}
-import chatbot.quiz.QuizHandler
 
 object WebServer {
   private var chatHistory: List[(String, String)]                     = List()
@@ -23,6 +22,23 @@ object WebServer {
 
   private def addToHistory(query: String, response: String): Unit = {
     chatHistory = (query, response) :: chatHistory.take(4)
+  }
+
+  private def sanitizeInput(input: String): String = {
+    input
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll("\"", "&quot;")
+      .replaceAll("'", "&#x27;")
+  }
+
+  private def log(message: String): Unit = {
+    println(s"[WebServer] $message")
+  }
+
+  private def renderHtml(content: String): HttpEntity.Strict = {
+    HttpEntity(ContentTypes.`text/html(UTF-8)`, content)
   }
 
   private val starryThemeCSS = """
@@ -151,6 +167,21 @@ object WebServer {
     .history-entry p {
       margin: 5px 0;
     }
+    .analytics-dashboard {
+      background-color: rgba(28, 36, 82, 0.6);
+      padding: 15px;
+      border-radius: 10px;
+      margin: 20px 0;
+      border-left: 3px solid #a09be7;
+    }
+    .analytics-dashboard h3 {
+      color: #64a0ff;
+      margin-bottom: 15px;
+    }
+    .analytics-dashboard p {
+      margin: 5px 0;
+      font-size: 1em;
+    }
     a {
       color: #64a0ff;
       text-decoration: none;
@@ -192,14 +223,15 @@ object WebServer {
       flex-wrap: wrap;
       gap: 10px;
     }
-    """
+  """
 
   def renderPage(
     lastQuery: Option[String] = None,
     response: Option[String] = None,
     isQuizActive: Boolean = false,
     quizSummary: Option[String] = None,
-    question: Option[chatbot.quiz.data.QuizQuestion] = None
+    question: Option[chatbot.quiz.data.QuizQuestion] = None,
+    analyticsDashboard: Option[String] = None
   ): String = {
     val greeting = userName match {
       case Some(name) => s"Hello, $name! Welcome to the Astronomy Chatbot!"
@@ -208,7 +240,7 @@ object WebServer {
     val nameForm = if (userName.isEmpty) {
       s"""
         <form method="POST" action="/set-name">
-          <input type="text" name="name" placeholder="Enter your name..." />
+          <input type="text" name="name" placeholder="Enter your name..." required />
           <button type="submit">Submit Name</button>
         </form>
       """
@@ -221,42 +253,63 @@ object WebServer {
           case Some(name) => s"$name, $msg"
           case None       => msg
         }
-        val summarySection = quizSummary.map(summary => s"<p>$summary</p>").getOrElse("")
+        val sanitizedMsg   = sanitizeInput(personalizedMsg)
+        val summarySection = quizSummary.map(summary => s"<p>${sanitizeInput(summary)}</p>").getOrElse("")
         val questionSection = question
           .map { q =>
-            // Only show question form if no question is in the response or quiz has ended
             if (!msg.contains("Question:") || quizSummary.isDefined) {
               s"""
-                <p><strong>Question:</strong> ${q.text}</p>
-                <form method="POST" action="/answer-quiz">
-                  <input type="hidden" name="questionId" value="${q.id}" />
-                  <div class="answer-buttons">
-                    ${q.options
-                  .map(opt => s"""<button type="submit" name="answer" value="${opt}">${opt}</button>""")
+            <p><strong>Question:</strong> ${sanitizeInput(q.text)}</p>
+            <form method="POST" action="/answer-quiz">
+              <input type="hidden" name="questionId" value="${q.id}" />
+              <div class="answer-buttons">
+                ${q.options
+                  .map(opt =>
+                    s"""<button type="submit" name="answer" value="${sanitizeInput(opt)}">${sanitizeInput(
+                        opt
+                      )}</button>"""
+                  )
                   .mkString}
-                  </div>
-                </form>
-              """
+              </div>
+            </form>
+          """
             } else {
               ""
             }
           }
           .getOrElse("")
         s"""
-          <div class="response-container">
-            ${lastQuery.map(q => s"<div class='query'>Your query: $q</div>").getOrElse("")}
-            <p>$personalizedMsg</p>
-            $questionSection
-            $summarySection
-            ${if (isQuizActive && question.isDefined && questionSection.nonEmpty) """
-              <form method="POST" action="/continue-quiz">
-                <button type="submit" name="action" value="next">Next Question</button>
-                <button type="submit" name="action" value="skip">Skip</button>
-                <button type="submit" name="action" value="end">End Quiz</button>
-              </form>
-            """ else ""}
-          </div>
-        """
+        <div class="response-container">
+          ${lastQuery.map(q => s"<div class='query'>Your query: ${sanitizeInput(q)}</div>").getOrElse("")}
+          <p>$sanitizedMsg</p>
+          $questionSection
+          $summarySection
+          ${if (isQuizActive && question.isDefined && questionSection.nonEmpty) """
+            <form method="POST" action="/continue-quiz">
+              <button type="submit" name="action" value="next">Next Question</button>
+              <button type="submit" name="action" value="skip">Skip</button>
+              <button type="submit" name="action" value="end">End Quiz</button>
+            </form>
+          """ else ""}
+        </div>
+      """
+      }
+      .getOrElse("")
+
+    val analyticsSection = analyticsDashboard
+      .map { dashboard =>
+        // Parse the dashboard string into key-value pairs
+        val lines = dashboard.split("\n").filter(_.contains(":")).map(_.trim)
+        val stats = lines.map { line =>
+          val Array(key, value) = line.split(":").map(_.trim)
+          s"<p><strong>$key:</strong> $value</p>"
+        }.mkString
+        s"""
+        <div class="analytics-dashboard">
+          <h3>📊 Analytics Dashboard</h3>
+          $stats
+        </div>
+      """
       }
       .getOrElse("")
 
@@ -276,18 +329,14 @@ object WebServer {
             <pre style="color: yellow;">Members:</pre><pre style="color: white;"> Mohamed, Dania, Maroska, Jana</pre>
             <h1>🔭 Astronomy Chatbot 🪐</h1>
             <p>$greeting</p>
-            
             $nameForm
-            
             <form method="POST" action="/chat">
-              <input type="text" name="input" placeholder="Ask something about astronomy..." />
+              <input type="text" name="input" placeholder="Ask something about astronomy..." required />
               <button type="submit">Ask</button>
             </form>
-            
-            <p><a href="/history">View Chat History</a></p>
-            
+            <p><a href="/history">View Chat History</a> | <a href="/analytics">View Analytics</a></p>
             $responseSection
-            
+            $analyticsSection
             <h2>Example queries:</h2>
             <ul>
               <li>Tell me about Mars</li>
@@ -295,7 +344,6 @@ object WebServer {
               <li>Give me a fact about black holes</li>
               <li>Start an astronomy quiz</li>
             </ul>
-            
             <div class="footer">
               <p>Astronomy Chatbot - Educational Project</p>
             </div>
@@ -312,8 +360,8 @@ object WebServer {
       chatHistory.map { case (query, response) =>
         s"""
           <div class="history-entry">
-            <p><strong>Query:</strong> $query</p>
-            <p><strong>Response:</strong> $response</p>
+            <p><strong>Query:</strong> ${sanitizeInput(query)}</p>
+            <p><strong>Response:</strong> ${sanitizeInput(response)}</p>
           </div>
         """
       }.mkString
@@ -335,11 +383,8 @@ object WebServer {
             <pre style="color: yellow;">Members:</pre><pre style="color: white;"> Mohamed, Dania, Maroska, Jana</pre>
             <h1>🔭 Chat History 🪐</h1>
             <p>View your last 5 interactions with the Astronomy Chatbot.</p>
-            
             $historySection
-            
             <p><a href="/">Back to Chat</a></p>
-            
             <div class="footer">
               <p>Astronomy Chatbot - Educational Project</p>
             </div>
@@ -358,62 +403,65 @@ object WebServer {
     val analytics   = new Analytics()
     val inputParser = new InputParser()
     val quizManager = new QuizManager()
-    val responder   = new Responder(dataSource, null, analytics, quizManager) // Null for PlanetApiClient
+    val responder   = new Responder(dataSource, analytics, quizManager)
     val quizHandler = new QuizHandler()
 
     val route =
       path("set-name") {
         post {
           formField("name") { name =>
-            userName = Some(name.trim.take(50))
-            complete(
-              HttpEntity(
-                ContentTypes.`text/html(UTF-8)`,
-                renderPage(response = Some(s"Welcome, $name! How can I help you explore the cosmos?"))
+            val sanitizedName = sanitizeInput(name.trim.take(50))
+            if (sanitizedName.isEmpty) {
+              log("Empty or invalid name provided")
+              complete(StatusCodes.BadRequest, renderHtml(renderPage(response = Some("Please provide a valid name."))))
+            } else {
+              userName = Some(sanitizedName)
+              log(s"User name set to: $sanitizedName")
+              complete(
+                renderHtml(
+                  renderPage(response = Some(s"Welcome, $sanitizedName! How can I help you explore the cosmos?"))
+                )
               )
-            )
+            }
           }
         }
       } ~
         path("chat") {
           post {
             formField("input") { input =>
-              inputParser.parseInput(input, quizHandler.isQuizActive()) match {
-                case Right(command) =>
-                  val response = command match {
-                    case chatbot.parser.AST.Command.StartQuiz =>
+              val sanitizedInput = sanitizeInput(input.trim)
+              if (sanitizedInput.isEmpty) {
+                log("Empty chat input received")
+                complete(
+                  StatusCodes.BadRequest,
+                  renderHtml(renderPage(response = Some("Please provide a valid input.")))
+                )
+              } else {
+                quizActive = quizHandler.isQuizActive()
+                val command = inputParser.parseInput(sanitizedInput, quizActive)
+                log(s"Parsed command: $command")
+
+                val response =
+                  if (command.startsWith("startquiz") || command.startsWith("answerquiz_") || command == "exit") {
+                    if (command == "startquiz") {
+                      analytics.logQuizStart() // Log quiz start
                       quizActive = true
-                      quizHandler.handleMessage(input)
-                    case _ =>
-                      if (quizHandler.isQuizActive()) {
-                        quizHandler.handleMessage(input)
-                      } else {
-                        responder.respond(command).getOrElse("message", "No response available.")
-                      }
-                  }
-                  addToHistory(input, response)
-                  currentQuestion = if (quizHandler.isQuizActive()) {
-                    quizManager.getCurrentQuestion()
+                    } else if (command == "exit") {
+                      quizActive = false
+                    }
+                    quizHandler.handleMessage(sanitizedInput)
                   } else {
-                    None
+                    responder.respond(command).getOrElse("message", "No response available.")
                   }
-                  complete(
-                    HttpEntity(
-                      ContentTypes.`text/html(UTF-8)`,
-                      renderPage(
-                        Some(input),
-                        Some(response),
-                        quizActive,
-                        None,
-                        currentQuestion
-                      )
-                    )
-                  )
-                case Left(error) =>
-                  addToHistory(input, s"Error: $error")
-                  complete(
-                    HttpEntity(ContentTypes.`text/html(UTF-8)`, renderPage(Some(input), Some(s"Error: $error")))
-                  )
+
+                addToHistory(sanitizedInput, response)
+                quizActive = quizHandler.isQuizActive()
+                currentQuestion = if (quizActive) quizManager.getCurrentQuestion() else None
+                log(s"Quiz active: $quizActive, Current question: ${currentQuestion.map(_.text).getOrElse("None")}")
+
+                complete(
+                  renderHtml(renderPage(Some(sanitizedInput), Some(response), quizActive, None, currentQuestion))
+                )
               }
             }
           }
@@ -421,82 +469,97 @@ object WebServer {
         path("answer-quiz") {
           post {
             formFields("questionId", "answer") { (questionId, answer) =>
-              val response = quizHandler.handleMessage(answer)
-              currentQuestion = quizManager.getCurrentQuestion()
-              quizActive = quizHandler.isQuizActive()
-              addToHistory(s"Quiz answer: $answer", response)
-              complete(
-                HttpEntity(
-                  ContentTypes.`text/html(UTF-8)`,
-                  renderPage(
-                    Some(s"Answer: $answer"),
-                    Some(response),
-                    quizActive,
-                    None,
-                    currentQuestion
+              val sanitizedAnswer = sanitizeInput(answer.trim)
+              if (sanitizedAnswer.isEmpty) {
+                log("Empty quiz answer received")
+                complete(
+                  StatusCodes.BadRequest,
+                  renderHtml(renderPage(response = Some("Please provide a valid answer.")))
+                )
+              } else {
+                // Assume QuizHandler returns a response indicating correctness (e.g., "Correct!" or "Incorrect...")
+                val response  = quizHandler.handleMessage(sanitizedAnswer)
+                val isCorrect = response.toLowerCase.contains("correct")
+                analytics.logQuizAnswer(isCorrect) // Log quiz answer
+
+                quizActive = quizHandler.isQuizActive()
+                currentQuestion = if (quizActive) quizManager.getCurrentQuestion() else None
+                addToHistory(s"Quiz answer: $sanitizedAnswer", response)
+                log(s"Quiz answer processed: $sanitizedAnswer, Response: $response, Correct: $isCorrect")
+                complete(
+                  renderHtml(
+                    renderPage(Some(s"Answer: $sanitizedAnswer"), Some(response), quizActive, None, currentQuestion)
                   )
                 )
-              )
+              }
             }
           }
         } ~
         path("continue-quiz") {
           post {
             formField("action") { action =>
-              val (message, quizActiveAfter, questionOpt, summaryOpt) = action match {
-                case "next" =>
-                  val nextQuestion = quizManager.nextQuestion()
-                  (
-                    nextQuestion.map(q => s"Next question: ${q.text}").getOrElse("No more questions."),
-                    nextQuestion.isDefined,
-                    nextQuestion,
-                    None
-                  )
-                case "skip" =>
-                  val nextQuestion = quizManager.nextQuestion()
-                  (
-                    nextQuestion.map(q => s"Skipped to: ${q.text}").getOrElse("No more questions."),
-                    nextQuestion.isDefined,
-                    nextQuestion,
-                    None
-                  )
-                case "end" =>
-                  val summary = quizManager.getQuizSummary()
-                  quizManager.resetQuiz()
-                  (
-                    s"Quiz ended. $summary",
-                    false,
-                    None,
-                    Some(summary)
-                  )
-                case _ =>
-                  (
-                    "Unknown action.",
-                    quizActive,
-                    currentQuestion,
-                    None
-                  )
+              if (!quizHandler.isQuizActive()) {
+                log("Attempted quiz action without active quiz")
+                complete(StatusCodes.BadRequest, renderHtml(renderPage(response = Some("No active quiz to continue."))))
+              } else {
+                val (message, questionOpt, summaryOpt) = action match {
+                  case "next" =>
+                    val nextQuestion = quizManager.nextQuestion()
+                    (
+                      nextQuestion.map(q => s"Next question: ${sanitizeInput(q.text)}").getOrElse("No more questions."),
+                      nextQuestion,
+                      None
+                    )
+                  case "skip" =>
+                    val nextQuestion = quizManager.nextQuestion()
+                    (
+                      nextQuestion.map(q => s"Skipped to: ${sanitizeInput(q.text)}").getOrElse("No more questions."),
+                      nextQuestion,
+                      None
+                    )
+                  case "end" =>
+                    val summary = quizManager.getQuizSummary()
+                    quizManager.resetQuiz()
+                    quizHandler.resetQuizState()
+                    (
+                      s"Quiz ended. ${sanitizeInput(summary)}",
+                      None,
+                      Some(summary)
+                    )
+                  case _ =>
+                    log(s"Unknown quiz action: $action")
+                    (
+                      "Unknown action.",
+                      currentQuestion,
+                      None
+                    )
+                }
+                quizActive = quizHandler.isQuizActive()
+                currentQuestion = questionOpt
+                addToHistory(action, message)
+                log(s"Quiz action: $action, Message: $message")
+                complete(renderHtml(renderPage(None, Some(message), quizActive, summaryOpt, questionOpt)))
               }
-              currentQuestion = questionOpt
-              quizActive = quizActiveAfter
-              addToHistory(action, message)
-              complete(
-                HttpEntity(
-                  ContentTypes.`text/html(UTF-8)`,
-                  renderPage(None, Some(message), quizActive, summaryOpt, questionOpt)
-                )
-              )
             }
           }
         } ~
         path("history") {
           get {
-            complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, renderHistoryPage()))
+            log("Rendering chat history")
+            complete(renderHtml(renderHistoryPage()))
+          }
+        } ~
+        path("analytics") {
+          get {
+            log("Rendering analytics dashboard")
+            complete(renderHtml(renderPage(analyticsDashboard = Some(analytics.getDashboard))))
           }
         } ~
         pathEndOrSingleSlash {
           get {
-            complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, renderPage()))
+            quizActive = quizHandler.isQuizActive()
+            log("Rendering main page")
+            complete(renderHtml(renderPage()))
           }
         } ~
         path("static" / Remaining) { file =>
@@ -508,9 +571,10 @@ object WebServer {
 
     bindingFuture.onComplete {
       case Success(_) =>
+        log(s"Server online at http://localhost:$serverPort/")
         println(s"Server online at http://localhost:$serverPort/\nPress ENTER to stop...")
       case Failure(e) =>
-        println(s"Binding failed: ${e.getMessage}")
+        log(s"Binding failed: ${e.getMessage}")
         system.terminate()
     }
 

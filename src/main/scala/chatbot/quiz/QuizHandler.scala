@@ -89,4 +89,9 @@ class QuizHandler {
     awaitingAnswer = false
     s"Quiz ended. $summary"
   }
+
+  def resetQuizState(): Unit = {
+    quizActive = false
+    quizManager.resetQuiz()
+  }
 }

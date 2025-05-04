@@ -1,5 +1,6 @@
 package chatbot.analytics
 
+<<<<<<< Updated upstream
 import chatbot.parser.AST.Command
 import chatbot.parser.AST.Command._
 import java.time.LocalDateTime
@@ -8,11 +9,18 @@ import scala.collection.mutable
 
 /** Enhanced Analytics for tracking comprehensive user interaction with the chatbot
   */
+=======
+>>>>>>> Stashed changes
 class Analytics {
-  private var interactionCount: Int           = 0
-  private var commandCounts: Map[String, Int] = Map.empty
-  private var startTime: LocalDateTime        = LocalDateTime.now()
+  private var totalInteractions = 0
+  private var commandCounts     = Map[String, Int]()
+  private var quizzesStarted    = 0
+  private var questionsAnswered = 0
+  private var correctAnswers    = 0
+  private var planetSearches    = Map[String, Int]()
+  private var comparisonPairs   = Map[(String, String), Int]()
 
+<<<<<<< Updated upstream
   // New analytics features
   private var sessionDurations: mutable.ListBuffer[Long]          = mutable.ListBuffer.empty // in seconds
   private var interactionTimes: mutable.ListBuffer[LocalDateTime] = mutable.ListBuffer.empty
@@ -221,5 +229,48 @@ class Analytics {
   private def isPlanet(topic: String): Boolean = {
     val planets = Set("mars", "jupiter", "saturn", "uranus", "neptune", "venus", "mercury", "earth", "pluto")
     planets.contains(topic.toLowerCase)
+=======
+  def logInteraction(command: String): Unit = {
+    totalInteractions += 1
+    commandCounts = commandCounts.updated(command, commandCounts.getOrElse(command, 0) + 1)
+    if (command.startsWith("askabout_")) {
+      val planet = command.drop("askabout_".length).capitalize
+      planetSearches = planetSearches.updated(planet, planetSearches.getOrElse(planet, 0) + 1)
+    } else if (command.startsWith("compare_")) {
+      val parts = command.drop("compare_".length).split("_")
+      if (parts.length >= 2) {
+        val pair = (parts(0).capitalize, parts(1).capitalize)
+        comparisonPairs = comparisonPairs.updated(pair, comparisonPairs.getOrElse(pair, 0) + 1)
+      }
+    }
+  }
+
+  def logQuizStart(): Unit = {
+    quizzesStarted += 1
+  }
+
+  def logQuizAnswer(correct: Boolean): Unit = {
+    questionsAnswered += 1
+    if (correct) correctAnswers += 1
+  }
+
+  def getDashboard: String = {
+    val mostUsedCommand    = commandCounts.maxByOption(_._2).map(_._1).getOrElse("None")
+    val mostSearchedPlanet = planetSearches.maxByOption(_._2).map(_._1).getOrElse("None")
+    val mostComparedPair =
+      comparisonPairs.maxByOption(_._2).map { case ((p1, p2), _) => s"$p1 vs $p2" }.getOrElse("None")
+    val successRate = if (questionsAnswered > 0) (correctAnswers.toDouble / questionsAnswered * 100).toInt else 0
+
+    s"""Analytics Dashboard
+=================
+Total Interactions: $totalInteractions
+Most Used Command: $mostUsedCommand
+Quizzes Started: $quizzesStarted
+Questions Answered: $questionsAnswered
+Quiz Success Rate: $successRate%
+Most Searched Planet: $mostSearchedPlanet
+Most Compared Pair: $mostComparedPair
+================="""
+>>>>>>> Stashed changes
   }
 }

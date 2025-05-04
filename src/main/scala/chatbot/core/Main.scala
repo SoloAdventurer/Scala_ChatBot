@@ -1,8 +1,6 @@
 package chatbot.main
 
 import chatbot.parser.InputParser
-import chatbot.parser.AST.Command
-import chatbot.parser.AST.Command._
 import chatbot.responder.Responder
 import chatbot.data.{AstronomyData, PlanetApiClient}
 import chatbot.analytics.Analytics
@@ -20,6 +18,32 @@ object Main {
   private val Reset  = "\u001b[0m"
   private val Blink  = "\u001b[5m"
 
+  // Format quiz responses with appropriate colors
+  private def formatQuizResponse(response: String): String = {
+    response match {
+      case r if r.contains("Correct!")                                         => s"${Green}$r${Reset}"
+      case r if r.contains("Incorrect") || r.contains("The correct answer is") => s"${Red}$r${Reset}"
+      case r if r.startsWith("Question:") || r.contains("Question:") =>
+        val parts = r.split("Question:", 2)
+        if (parts.length > 1) {
+          val intro        = parts(0).trim
+          val questionPart = parts(1).trim
+          val (questionText, options) = if (questionPart.contains("\n\n")) {
+            val split = questionPart.split("\n\n", 2)
+            (split(0), split(1))
+          } else {
+            (questionPart, "")
+          }
+          s"${intro}${Cyan}Question:${Reset} $questionText\n\n${Yellow}$options${Reset}"
+        } else {
+          s"${Cyan}$r${Reset}"
+        }
+      case r if r.contains("Quiz Summary") || r.contains("Your Personalized Space Profile") => s"${Yellow}$r${Reset}"
+      case r if r.trim.isEmpty => s"${Cyan}No response available.${Reset}"
+      case r                   => s"${Cyan}$r${Reset}"
+    }
+  }
+
   def greetUser(name: String): String = {
     s"Hello, $name! I'm CHATURN, your astronomy chatbot. Ask me about planets, stars, or try 'help' for commands!"
   }
@@ -30,7 +54,7 @@ object Main {
     val apiClient   = new PlanetApiClient()
     val analytics   = new Analytics()
     val quizManager = new QuizManager()
-    val responder   = new Responder(dataSource, apiClient, analytics, quizManager)
+    val responder   = new Responder(dataSource, analytics, quizManager)
     val parser      = new InputParser()
     val quizHandler = new QuizHandler()
 
@@ -91,103 +115,59 @@ object Main {
     var isQuizMode = false // Flag to indicate if we're in quiz mode
 
     while (running) {
-      val prompt = if (isQuizMode) {
-        s"${Green}Quiz> ${Reset}"
-      } else {
-        s"${Green}CHATURN> ${Reset}"
-      }
-
+      val prompt = if (isQuizMode) s"${Green}Quiz> ${Reset}" else s"${Green}CHATURN> ${Reset}"
       print(prompt)
       val input = StdIn.readLine()
 
       if (input == null || input.trim.toLowerCase == "exit") {
-        if (isQuizMode) {
-          // Exit quiz mode but continue the chatbot
+        running = false // Exit the program in all cases
+        val message = if (isQuizMode) {
           val response = quizHandler.handleMessage("end quiz")
-          println(s"${Yellow}$response${Reset}")
-          isQuizMode = false
+          quizHandler.resetQuizState()
+          s"${Yellow}$response${Reset}"
         } else {
-          // Exit the entire program
-          running = false
-          println(s"${Yellow}Goodbye! Come back to explore the cosmos!${Reset}")
+          s"${Yellow}Goodbye! Come back to explore the cosmos!${Reset}"
         }
+        println(message)
       } else if (input.trim.isEmpty) {
         println(s"${Red}Please type something!${Reset}")
       } else {
-        // Check for quiz mode transitions
-        input.trim.toLowerCase match {
-          case cmd if cmd.startsWith("quiz") || cmd.startsWith("start quiz") =>
-            if (!isQuizMode) {
-              isQuizMode = true
-              val response = quizHandler.handleMessage(input)
-              println(formatQuizResponse(response))
-            } else {
-              val response = quizHandler.handleMessage(input)
-              println(formatQuizResponse(response))
-            }
+        val normalizedInput = input.trim.toLowerCase
+        val response = normalizedInput match {
+          case cmd if (cmd.startsWith("start quiz") || cmd == "quiz") && !isQuizMode =>
+            isQuizMode = true
+            quizHandler.handleMessage(input)
 
-          case "end quiz" | "stop quiz" | "exit quiz" | "exit" | "quit" if isQuizMode =>
-            val response = quizHandler.handleMessage(input)
-            println(formatQuizResponse(response))
+          case cmd if List("end quiz", "stop quiz", "exit quiz", "quit").contains(cmd) && isQuizMode =>
+            val resp = quizHandler.handleMessage(input)
             isQuizMode = false
+            quizHandler.resetQuizState()
+            resp
 
           case _ if isQuizMode =>
-            // We're in quiz mode, handle all input via quiz handler
-            val response = quizHandler.handleMessage(input)
-            println(formatQuizResponse(response))
-
-            // Check if we should exit quiz mode based on response
-            if (
-              response.contains("The quiz is now complete") ||
-              response.contains("No active quiz")
-            ) {
-              isQuizMode = false
+            val resp = quizHandler.handleMessage(input)
+            // Sync with quizHandler state and check for completion
+            isQuizMode = quizHandler.isQuizActive()
+            if (!isQuizMode || resp.contains("Quiz ended") || resp.contains("No active quiz")) {
+              quizHandler.resetQuizState()
             }
+            resp
 
           case _ =>
-            // Normal chatbot flow - parse command and respond
-            val command = parser.parseInput(input, false) match {
-              case Right(cmd) => cmd
-              case Left(error) =>
-                println(s"${Red}Error:${Reset} $error")
-                Unknown(input)
-            }
-
+            val command = parser.parseInput(input, isQuizMode)
             analytics.logInteraction(command)
-            val response = responder.respond(command)
-            println(s"${Cyan}Response:${Reset} $userName, ${response.getOrElse("message", "Error!")}")
+            responder.respond(command).getOrElse("message", "I didn’t understand. Try 'help'!")
         }
-      }
-    }
-  }
 
-  // Format quiz responses with appropriate colors
-  private def formatQuizResponse(response: String): String = {
-    if (response.contains("Correct!")) {
-      s"${Green}$response${Reset}"
-    } else if (response.contains("The correct answer is")) {
-      s"${Red}$response${Reset}"
-    } else if (response.startsWith("Question:") || response.contains("Question:")) {
-      // Highlight question and options
-      val parts = response.split("Question:", 2)
-      if (parts.length > 1) {
-        val intro        = parts(0)
-        val questionPart = parts(1)
-
-        // Handle options formatting if present
-        if (questionPart.contains("\n\n")) {
-          val questionSplit = questionPart.split("\n\n", 2)
-          s"$intro${Cyan}Question:${Reset}${questionSplit(0)}\n\n${Yellow}${questionSplit(1)}${Reset}"
+        // Output response based on context
+        val output = if (isQuizMode || normalizedInput.startsWith("start quiz")) {
+          formatQuizResponse(response)
         } else {
-          s"$intro${Cyan}Question:${Reset}$questionPart"
+          s"${Cyan}CHATURN>${Reset} $userName, $response"
         }
-      } else {
-        s"${Cyan}$response${Reset}"
+        println(output)
       }
-    } else if (response.contains("Quiz Summary") || response.contains("Your Personalized Space Profile")) {
-      s"${Yellow}$response${Reset}"
-    } else {
-      s"${Cyan}$response${Reset}"
     }
+
   }
 }
