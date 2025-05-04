@@ -134,7 +134,10 @@ object Main {
       } else {
         val normalizedInput = input.trim.toLowerCase
         val response = normalizedInput match {
-          case cmd if (cmd.startsWith("start quiz") || cmd == "quiz") && !isQuizMode =>
+          case cmd
+              if (cmd.startsWith("start quiz") || cmd == "quiz" || cmd.startsWith(
+                "start an astronomy quiz"
+              )) && !isQuizMode =>
             isQuizMode = true
             quizHandler.handleMessage(input)
 
@@ -156,7 +159,7 @@ object Main {
           case _ =>
             val command = parser.parseInput(input, isQuizMode)
             analytics.logInteraction(command)
-            responder.respond(command).getOrElse("message", "I didn’t understand. Try 'help'!")
+            responder.respond(command).getOrElse("message", "I didnt understand. Try 'help'!")
         }
 
         // Output response based on context

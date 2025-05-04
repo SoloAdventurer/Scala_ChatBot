@@ -45,7 +45,7 @@ class QuizHandler {
       case _                            => "traditional"
     }
     currentTopic = topic
-    val questionCount = 7
+    val questionCount = 5
 
     quizManager.startQuiz(topic, questionCount) match {
       case Some(question) =>

@@ -19,6 +19,8 @@ object WebServer {
   private var currentQuestion: Option[chatbot.quiz.data.QuizQuestion] = None
   private var quizActive: Boolean                                     = false
   private var userName: Option[String]                                = None
+  private var totalQuizQuestions: Int                                 = 7                 // 7 based on quizManager
+  private var quizManager: QuizManager                                = new QuizManager() // Initialize properly
 
   private def addToHistory(query: String, response: String): Unit = {
     chatHistory = (query, response) :: chatHistory.take(4)
@@ -162,7 +164,7 @@ object WebServer {
       padding: 10px;
       border-radius: 8px;
       margin: 10px 0;
-      border-left: 3px solid #a09be7;
+      border-left: 3x solid #a09be7;
     }
     .history-entry p {
       margin: 5px 0;
@@ -172,7 +174,7 @@ object WebServer {
       padding: 15px;
       border-radius: 10px;
       margin: 20px 0;
-      border-left: 3px solid #a09be7;
+      border-left: 3x solid #a09be7;
     }
     .analytics-dashboard h3 {
       color: #64a0ff;
@@ -223,6 +225,37 @@ object WebServer {
       flex-wrap: wrap;
       gap: 10px;
     }
+    .progress-meter {
+      width: 100%;
+      background-color: #1c2452;
+      border-radius: 5px;
+      overflow: hidden;
+      margin: 10px 0;
+    }
+    .progress-bar {
+      height: 20px;
+      background-color: #64a0ff;
+      text-align: center;
+      color: white;
+      line-height: 20px;
+      transition: width 0.3s ease;
+    }
+    .quiz-container {
+      background-color: rgba(28, 36, 82, 0.8);
+      border-radius: 10px;
+      padding: 15px;
+      margin-top: 15px;
+      border-left: 3px solid #a09be7;
+    }
+    .quiz-options form {
+      margin-top: 10px;
+    }
+    .quiz-topic-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 15px;
+    }
   """
 
   def renderPage(
@@ -247,6 +280,24 @@ object WebServer {
     } else {
       ""
     }
+
+    // Handle quiz topic selection if message contains "Quiz topics"
+    val quizTopicSection = response.exists(_.toLowerCase.contains("quiz topics")) match {
+      case true =>
+        """
+        <div class="quiz-container">
+          <h3>Select a Quiz Topic:</h3>
+          <div class="quiz-topic-buttons">
+            <form method="POST" action="/start-quiz">
+              <button type="submit" name="topic" value="traditional">Traditional Quiz</button>
+              <button type="submit" name="topic" value="personal">Personal Quiz</button>
+            </form>
+          </div>
+        </div>
+        """
+      case false => ""
+    }
+
     val responseSection = response
       .map { msg =>
         val personalizedMsg = userName match {
@@ -255,42 +306,53 @@ object WebServer {
         }
         val sanitizedMsg   = sanitizeInput(personalizedMsg)
         val summarySection = quizSummary.map(summary => s"<p>${sanitizeInput(summary)}</p>").getOrElse("")
-        val questionSection = question
-          .map { q =>
-            if (!msg.contains("Question:") || quizSummary.isDefined) {
+
+        val questionSection = if (isQuizActive && question.isDefined) {
+          question
+            .map { q =>
+              val currentIndex   = quizManager.getCurrentQuestionIndex() + 1
+              val totalQuestions = quizManager.getTotalQuestions()
+              val progress       = if (totalQuestions > 0) ((currentIndex.toDouble / totalQuestions) * 100).toInt else 0
+
               s"""
-            <p><strong>Question:</strong> ${sanitizeInput(q.text)}</p>
-            <form method="POST" action="/answer-quiz">
-              <input type="hidden" name="questionId" value="${q.id}" />
-              <div class="answer-buttons">
-                ${q.options
+            <div class="quiz-container">
+              <p><strong>Question:</strong> ${sanitizeInput(q.text)}</p>
+              <div class="progress-meter">
+                <div class="progress-bar" style="width: ${progress}%;">${currentIndex} / ${totalQuestions}</div>
+              </div>
+              <div class="quiz-options">
+                <form method="POST" action="/answer-quiz">
+                  <input type="hidden" name="questionId" value="${q.id}" />
+                  <div class="answer-buttons">
+                    ${q.options
                   .map(opt =>
                     s"""<button type="submit" name="answer" value="${sanitizeInput(opt)}">${sanitizeInput(
                         opt
                       )}</button>"""
                   )
                   .mkString}
+                  </div>
+                </form>
               </div>
+            </div>
+            <form method="POST" action="/continue-quiz">
+              <button type="submit" name="action" value="skip">Skip Question</button>
+              <button type="submit" name="action" value="end">End Quiz</button>
             </form>
-          """
-            } else {
-              ""
+            """
             }
-          }
-          .getOrElse("")
+            .getOrElse("")
+        } else {
+          ""
+        }
+
         s"""
         <div class="response-container">
           ${lastQuery.map(q => s"<div class='query'>Your query: ${sanitizeInput(q)}</div>").getOrElse("")}
           <p>$sanitizedMsg</p>
           $questionSection
           $summarySection
-          ${if (isQuizActive && question.isDefined && questionSection.nonEmpty) """
-            <form method="POST" action="/continue-quiz">
-              <button type="submit" name="action" value="next">Next Question</button>
-              <button type="submit" name="action" value="skip">Skip</button>
-              <button type="submit" name="action" value="end">End Quiz</button>
-            </form>
-          """ else ""}
+          $quizTopicSection
         </div>
       """
       }
@@ -298,7 +360,6 @@ object WebServer {
 
     val analyticsSection = analyticsDashboard
       .map { dashboard =>
-        // Parse the dashboard string into key-value pairs
         val lines = dashboard.split("\n").filter(_.contains(":")).map(_.trim)
         val stats = lines.map { line =>
           val Array(key, value) = line.split(":").map(_.trim)
@@ -341,8 +402,8 @@ object WebServer {
             <ul>
               <li>Tell me about Mars</li>
               <li>List all planets</li>
-              <li>Give me a fact about black holes</li>
-              <li>Start an astronomy quiz</li>
+              <li>Give me a random fact</li>
+              <li>Start quiz - Quiz topics</li>
             </ul>
             <div class="footer">
               <p>Astronomy Chatbot - Educational Project</p>
@@ -402,7 +463,7 @@ object WebServer {
     val dataSource  = new AstronomyData(config)
     val analytics   = new Analytics()
     val inputParser = new InputParser()
-    val quizManager = new QuizManager()
+    quizManager = new QuizManager() // Initialize properly
     val responder   = new Responder(dataSource, analytics, quizManager)
     val quizHandler = new QuizHandler()
 
@@ -441,21 +502,39 @@ object WebServer {
                 val command = inputParser.parseInput(sanitizedInput, quizActive)
                 log(s"Parsed command: $command")
 
+                analytics.logInteraction(command)
+
                 val response =
                   if (command.startsWith("startquiz") || command.startsWith("answerquiz_") || command == "exit") {
                     if (command == "startquiz") {
-                      analytics.logQuizStart() // Log quiz start
-                      quizActive = true
+                      val quizResponse =
+                        if (sanitizedInput.toLowerCase.contains("traditional")) {
+                          quizActive = true
+                          quizManager.startQuiz("traditional", 5)
+                          "Starting a traditional astronomy quiz! Get ready for the first question."
+                        } else if (sanitizedInput.toLowerCase.contains("personal")) {
+                          quizActive = true
+                          quizManager.startQuiz("personal", 5)
+                          "Starting a personalized astronomy quiz! Let's see what you prefer."
+                        } else {
+                          "Quiz topics:\n- Traditional (astronomy facts)\n- Personal (preference questions)"
+                        }
+                      quizResponse
                     } else if (command == "exit") {
                       quizActive = false
+                      quizHandler.resetQuizState()
+                      "Quiz ended. You can start a new one anytime!"
+                    } else {
+                      quizHandler.handleMessage(sanitizedInput)
                     }
-                    quizHandler.handleMessage(sanitizedInput)
                   } else {
                     responder.respond(command).getOrElse("message", "No response available.")
                   }
 
                 addToHistory(sanitizedInput, response)
-                quizActive = quizHandler.isQuizActive()
+                quizActive = quizHandler.isQuizActive() || (sanitizedInput.toLowerCase.contains(
+                  "quiz"
+                ) && !sanitizedInput.toLowerCase.contains("end"))
                 currentQuestion = if (quizActive) quizManager.getCurrentQuestion() else None
                 log(s"Quiz active: $quizActive, Current question: ${currentQuestion.map(_.text).getOrElse("None")}")
 
@@ -463,6 +542,26 @@ object WebServer {
                   renderHtml(renderPage(Some(sanitizedInput), Some(response), quizActive, None, currentQuestion))
                 )
               }
+            }
+          }
+        } ~
+        path("start-quiz") {
+          post {
+            formField("topic") { topic =>
+              val numQuestions = 5
+              quizHandler.resetQuizState()
+              quizActive = true
+              val question = quizManager.startQuiz(topic, numQuestions)
+              val response = question match {
+                case Some(q) => s"Starting ${topic.capitalize} Quiz! First question: ${q.text}"
+                case None    => s"Sorry, the ${topic} quiz is not available."
+              }
+              currentQuestion = question
+              addToHistory(s"Start ${topic} quiz", response)
+              log(s"Quiz started: $topic with $numQuestions questions")
+              complete(
+                renderHtml(renderPage(Some(s"Start ${topic} quiz"), Some(response), quizActive, None, currentQuestion))
+              )
             }
           }
         } ~
@@ -477,18 +576,35 @@ object WebServer {
                   renderHtml(renderPage(response = Some("Please provide a valid answer.")))
                 )
               } else {
-                // Assume QuizHandler returns a response indicating correctness (e.g., "Correct!" or "Incorrect...")
-                val response  = quizHandler.handleMessage(sanitizedAnswer)
-                val isCorrect = response.toLowerCase.contains("correct")
-                analytics.logQuizAnswer(isCorrect) // Log quiz answer
+                val evalResult = quizManager.answerCurrentQuestion(sanitizedAnswer)
+                val response   = evalResult.getOrElse("No response from quiz system")
+                val isCorrect  = response.toLowerCase.contains("correct")
 
-                quizActive = quizHandler.isQuizActive()
-                currentQuestion = if (quizActive) quizManager.getCurrentQuestion() else None
-                addToHistory(s"Quiz answer: $sanitizedAnswer", response)
-                log(s"Quiz answer processed: $sanitizedAnswer, Response: $response, Correct: $isCorrect")
+                analytics.logInteraction(s"answerquiz_$sanitizedAnswer", isCorrect)
+
+                // Check if there are more questions
+                val nextQuestion = quizManager.nextQuestion()
+                quizActive = nextQuestion.isDefined
+                currentQuestion = nextQuestion
+
+                // Add additional response text if there's a next question
+                val fullResponse = nextQuestion match {
+                  case Some(q) => s"$response\n\nNext question: ${q.text}"
+                  case None =>
+                    val summary = quizManager.getQuizSummary()
+                    quizManager.resetQuiz()
+                    quizHandler.resetQuizState()
+                    s"$response\n\n$summary"
+                }
+
+                addToHistory(s"Quiz answer: $sanitizedAnswer", fullResponse)
+                log(
+                  s"Quiz answer processed: $sanitizedAnswer, Response: $response, Correct: $isCorrect, Next question: ${nextQuestion.isDefined}"
+                )
+
                 complete(
                   renderHtml(
-                    renderPage(Some(s"Answer: $sanitizedAnswer"), Some(response), quizActive, None, currentQuestion)
+                    renderPage(Some(s"Answer: $sanitizedAnswer"), Some(fullResponse), quizActive, None, currentQuestion)
                   )
                 )
               }
@@ -498,31 +614,30 @@ object WebServer {
         path("continue-quiz") {
           post {
             formField("action") { action =>
-              if (!quizHandler.isQuizActive()) {
+              if (!quizHandler.isQuizActive() && !quizActive) {
                 log("Attempted quiz action without active quiz")
                 complete(StatusCodes.BadRequest, renderHtml(renderPage(response = Some("No active quiz to continue."))))
               } else {
                 val (message, questionOpt, summaryOpt) = action match {
-                  case "next" =>
-                    val nextQuestion = quizManager.nextQuestion()
-                    (
-                      nextQuestion.map(q => s"Next question: ${sanitizeInput(q.text)}").getOrElse("No more questions."),
-                      nextQuestion,
-                      None
-                    )
                   case "skip" =>
                     val nextQuestion = quizManager.nextQuestion()
+                    quizActive = nextQuestion.isDefined
+                    currentQuestion = nextQuestion
                     (
-                      nextQuestion.map(q => s"Skipped to: ${sanitizeInput(q.text)}").getOrElse("No more questions."),
+                      nextQuestion
+                        .map(q => s"Skipped to next question: ${q.text}")
+                        .getOrElse("No more questions. Quiz completed!"),
                       nextQuestion,
-                      None
+                      if (nextQuestion.isEmpty) Some(quizManager.getQuizSummary()) else None
                     )
                   case "end" =>
                     val summary = quizManager.getQuizSummary()
                     quizManager.resetQuiz()
                     quizHandler.resetQuizState()
+                    quizActive = false
+                    currentQuestion = None
                     (
-                      s"Quiz ended. ${sanitizeInput(summary)}",
+                      s"Quiz ended. $summary",
                       None,
                       Some(summary)
                     )
@@ -534,10 +649,16 @@ object WebServer {
                       None
                     )
                 }
-                quizActive = quizHandler.isQuizActive()
-                currentQuestion = questionOpt
+
                 addToHistory(action, message)
-                log(s"Quiz action: $action, Message: $message")
+                log(s"Quiz action: $action, Message: $message, Quiz active: $quizActive")
+
+                if (!quizActive && summaryOpt.isDefined) {
+                  // If quiz ended, reset states
+                  quizManager.resetQuiz()
+                  quizHandler.resetQuizState()
+                }
+
                 complete(renderHtml(renderPage(None, Some(message), quizActive, summaryOpt, questionOpt)))
               }
             }

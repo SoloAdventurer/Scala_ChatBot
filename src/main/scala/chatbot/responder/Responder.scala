@@ -11,7 +11,9 @@ class Responder(dataSource: AstronomyData, analytics: Analytics, quizManager: Qu
   private val greetings = List(
     "Hello! How can I help with astronomy today?",
     "Hi! What would you like to know about space?",
-    "Welcome! Ask me anything about the universe!"
+    "Welcome! Ask me anything about the universe!",
+    "Hey there! Ready to explore the stars?",
+    "Greetings, space traveler! What’s on your mind?"
   )
 
   private val helpMessages = List(
@@ -20,9 +22,9 @@ class Responder(dataSource: AstronomyData, analytics: Analytics, quizManager: Qu
   )
 
   private val unknownResponses = List(
-    "I’m not sure. Try rephrasing or type 'help'.",
-    "That’s beyond my orbit! Try 'help' for options.",
-    "I didn’t understand. Maybe try 'help'?"
+    "Im not sure. Try rephrasing or type 'help'.",
+    "Thats beyond my orbit! Try 'help' for options.",
+    "I didnt understand. Maybe try 'help'?"
   )
 
   private def fetchFacts(topic: String): Map[String, String] = {
@@ -36,8 +38,8 @@ class Responder(dataSource: AstronomyData, analytics: Analytics, quizManager: Qu
   }
 
   private def formatResponse(topic: String, facts: Map[String, String], defaultMsg: String): String = {
-    if (facts.isEmpty) return s"Sorry, I don’t have info on $topic. Try another topic!"
-    val intro = s"Here’s what I know about $topic:"
+    if (facts.isEmpty) return s"Sorry, I dont have info on $topic. Try another topic!"
+    val intro = s"Heres what I know about $topic:"
     val formattedFacts = facts
       .map { case (k, v) =>
         val readableKey = k.split("_").map(_.capitalize).mkString(" ")
@@ -51,11 +53,11 @@ class Responder(dataSource: AstronomyData, analytics: Analytics, quizManager: Qu
     val facts1 = fetchFacts(topic1)
     val facts2 = fetchFacts(topic2)
     if (facts1.isEmpty || facts2.isEmpty) {
-      return s"I dont have enough info to compare $topic1 and $topic2."
+      return s"I don’t have enough info to compare $topic1 and $topic2."
     }
     val intro = s"Comparing $topic1 and $topic2:"
     val keysToCompare =
-      List("diameter", "mass", "distance from sun").filter(k => facts1.contains(k) && facts2.contains(k))
+      List("diameter", "mass", "distance_from_sun").filter(k => facts1.contains(k) && facts2.contains(k))
     val comparisons =
       if (keysToCompare.isEmpty) ""
       else {
@@ -70,14 +72,17 @@ class Responder(dataSource: AstronomyData, analytics: Analytics, quizManager: Qu
     s"$intro\n$comparisons"
   }
 
-  private def personalizeResponse(response: String, topic: Option[String] = None): String = {
-    topic.foreach(t => recentTopics = (t :: recentTopics).distinct.take(3))
-    if (recentTopics.nonEmpty && Random.nextDouble() < 0.3) {
-      val prevTopic = recentTopics.head
-      s"Since you asked about $prevTopic, $response"
-    } else {
-      response
-    }
+  private def getRandomFact(): String = {
+    val planets = dataSource.getPlanets
+    if (planets.isEmpty) return "No facts available. Try asking about a planet!"
+
+    val randomPlanet = planets(Random.nextInt(planets.size))
+    val facts        = fetchFacts(randomPlanet)
+    if (facts.isEmpty) return "No facts available for this planet."
+
+    val factEntry   = facts.toList(Random.nextInt(facts.size))
+    val readableKey = factEntry._1.split("_").map(_.capitalize).mkString(" ")
+    s"Heres a fact about $randomPlanet: Its $readableKey is ${factEntry._2}."
   }
 
   private def maybeAddFollowUp(response: String, topic: Option[String] = None): String = {
@@ -95,23 +100,23 @@ class Responder(dataSource: AstronomyData, analytics: Analytics, quizManager: Qu
   def respond(command: String): Map[String, String] = {
     analytics.logInteraction(command)
     val response = command match {
+      case "greetings" =>
+        Map("message" -> Random.shuffle(greetings).head)
+
       case "exit" =>
         Map("message" -> "Goodbye! Safe travels through the cosmos!")
 
       case "help" =>
-        Map("message" -> personalizeResponse(Random.shuffle(helpMessages).head, None))
+        Map("message" -> Random.shuffle(helpMessages).head)
 
       case "listplanets" =>
         val planets = dataSource.getPlanets
         val message = if (planets.isEmpty) "No planets found." else s"Planets: ${planets.mkString(", ")}"
-        Map("message" -> personalizeResponse(message, None))
+        Map("message" -> message)
 
       case "randomfact" =>
-        val allFacts = dataSource.getPlanets.flatMap(planet => fetchFacts(planet).values)
-        val message =
-          if (allFacts.isEmpty) "No facts available. Try a planet!"
-          else s"Fact: ${allFacts(Random.nextInt(allFacts.size))}"
-        Map("message" -> maybeAddFollowUp(personalizeResponse(message, None), None))
+        val message = getRandomFact()
+        Map("message" -> maybeAddFollowUp(message, None))
 
       case "startquiz" =>
         Map("message" -> "Starting a quiz! Get ready for the first question.", "quizActive" -> "true")
@@ -124,7 +129,7 @@ class Responder(dataSource: AstronomyData, analytics: Analytics, quizManager: Qu
         val topic   = cmd.drop("askabout_".length).capitalize
         val facts   = fetchFacts(topic)
         val message = formatResponse(topic, facts, s"No info on $topic. Try another topic!")
-        Map("message" -> maybeAddFollowUp(personalizeResponse(message, Some(topic)), Some(topic)))
+        Map("message" -> maybeAddFollowUp(message, Some(topic)))
 
       case cmd if cmd.startsWith("compare_") =>
         val parts = cmd.drop("compare_".length).split("_")
@@ -135,7 +140,7 @@ class Responder(dataSource: AstronomyData, analytics: Analytics, quizManager: Qu
           val topic2 = parts(1).capitalize
           recentTopics = (List(topic1, topic2) ++ recentTopics).distinct.take(3)
           val message = generateComparison(topic1, topic2)
-          Map("message" -> personalizeResponse(message, None))
+          Map("message" -> message)
         }
 
       case cmd if cmd.startsWith("listcategory_") =>
@@ -149,7 +154,7 @@ class Responder(dataSource: AstronomyData, analytics: Analytics, quizManager: Qu
           case _                => List(s"No items for '$category'")
         }
         val message = s"$category: ${items.mkString(", ")}"
-        Map("message" -> personalizeResponse(message, None))
+        Map("message" -> message)
 
       case cmd if cmd.startsWith("unknown_") =>
         val input = cmd.drop("unknown_".length)

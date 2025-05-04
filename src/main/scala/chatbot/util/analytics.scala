@@ -1,16 +1,10 @@
 package chatbot.analytics
 
-<<<<<<< Updated upstream
-import chatbot.parser.AST.Command
-import chatbot.parser.AST.Command._
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import scala.collection.mutable
 
-/** Enhanced Analytics for tracking comprehensive user interaction with the chatbot
-  */
-=======
->>>>>>> Stashed changes
+/** Enhanced Analytics for tracking comprehensive user interaction with the chatbot */
 class Analytics {
   private var totalInteractions = 0
   private var commandCounts     = Map[String, Int]()
@@ -20,7 +14,6 @@ class Analytics {
   private var planetSearches    = Map[String, Int]()
   private var comparisonPairs   = Map[(String, String), Int]()
 
-<<<<<<< Updated upstream
   // New analytics features
   private var sessionDurations: mutable.ListBuffer[Long]          = mutable.ListBuffer.empty // in seconds
   private var interactionTimes: mutable.ListBuffer[LocalDateTime] = mutable.ListBuffer.empty
@@ -35,16 +28,16 @@ class Analytics {
   private var maxConsecutiveInteractions: Int              = 0
 
   // Time of last interaction for measuring engagement
-  private var lastInteractionTime: LocalDateTime = startTime
+  private var lastInteractionTime: LocalDateTime = LocalDateTime.now()
 
   /** Logs a user interaction with the chatbot
     * @param command
-    *   The command the user issued
+    *   The command string issued by the user
     * @param isCorrectQuizAnswer
     *   Optional parameter to track quiz performance
     */
-  def logInteraction(command: Command, isCorrectQuizAnswer: Boolean = false): Unit = {
-    interactionCount += 1
+  def logInteraction(command: String, isCorrectQuizAnswer: Boolean = false): Unit = {
+    totalInteractions += 1
     val now = LocalDateTime.now()
 
     // Track time between interactions
@@ -60,42 +53,46 @@ class Analytics {
     lastInteractionTime = now
     interactionTimes += now
 
-    // Extract the command type name
-    val commandType = command.getClass.getSimpleName.replace("$", "")
-
     // Update command frequency
     commandCounts = commandCounts.updated(
-      commandType,
-      commandCounts.getOrElse(commandType, 0) + 1
+      command.split("_").headOption.getOrElse("unknown"),
+      commandCounts.getOrElse(command.split("_").headOption.getOrElse("unknown"), 0) + 1
     )
 
     // Log specific command types
     command match {
-      case AST.Command.AskAbout(topic) if isPlanet(topic) =>
-        topSearchedPlanets = topSearchedPlanets.updated(
-          topic.toLowerCase,
-          topSearchedPlanets.getOrElse(topic.toLowerCase, 0) + 1
-        )
+      case cmd if cmd.startsWith("askabout_") =>
+        val topic = cmd.drop("askabout_".length).toLowerCase
+        if (isPlanet(topic)) {
+          topSearchedPlanets = topSearchedPlanets.updated(
+            topic,
+            topSearchedPlanets.getOrElse(topic, 0) + 1
+          )
+        }
 
-      case AST.Command.Compare(topic1, topic2) =>
-        val pair = if (topic1 < topic2) (topic1, topic2) else (topic2, topic1)
-        topComparedPairs = topComparedPairs.updated(
-          pair,
-          topComparedPairs.getOrElse(pair, 0) + 1
-        )
+      case cmd if cmd.startsWith("compare_") =>
+        val parts = cmd.drop("compare_".length).split("_")
+        if (parts.length >= 2) {
+          val topic1 = parts(0).toLowerCase
+          val topic2 = parts(1).toLowerCase
+          val pair   = if (topic1 < topic2) (topic1, topic2) else (topic2, topic1)
+          topComparedPairs = topComparedPairs.updated(
+            pair,
+            topComparedPairs.getOrElse(pair, 0) + 1
+          )
+        }
 
-      case AST.Command.StartQuiz =>
+      case "startquiz" =>
         quizStats = quizStats.updated(
           "quizzes_started",
           quizStats("quizzes_started") + 1
         )
 
-      case AST.Command.AnswerQuiz(_) =>
+      case cmd if cmd.startsWith("answerquiz_") =>
         quizStats = quizStats.updated(
           "questions_answered",
           quizStats("questions_answered") + 1
         )
-
         if (isCorrectQuizAnswer) {
           quizStats = quizStats.updated(
             "correct_answers",
@@ -108,13 +105,13 @@ class Analytics {
 
     // In a real implementation, you might want to log this to a file or database
     val timestamp = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
-    println(s"[DEBUG] $timestamp: User issued command: $commandType")
+    println(s"[DEBUG] $timestamp: User issued command: $command")
   }
 
   /** Records the end of a user session Useful for tracking how long users typically engage with the chatbot
     */
   def endSession(): Unit = {
-    val sessionDuration = java.time.Duration.between(startTime, LocalDateTime.now()).getSeconds
+    val sessionDuration = java.time.Duration.between(lastInteractionTime, LocalDateTime.now()).getSeconds
     sessionDurations += sessionDuration
   }
 
@@ -123,7 +120,7 @@ class Analytics {
     *   Map containing detailed usage statistics
     */
   def getStats: Map[String, String] = {
-    val runTime = java.time.Duration.between(startTime, LocalDateTime.now())
+    val runTime = java.time.Duration.between(LocalDateTime.now(), LocalDateTime.now())
     val hours   = runTime.toHours
     val minutes = runTime.toMinutesPart
 
@@ -140,7 +137,7 @@ class Analytics {
       else 0.0
 
     Map(
-      "total_interactions"        -> interactionCount.toString,
+      "total_interactions"        -> totalInteractions.toString,
       "runtime"                   -> f"${hours}h ${minutes}m",
       "most_used_command"         -> getMostUsedCommand,
       "command_frequencies"       -> commandCounts.toString,
@@ -154,6 +151,21 @@ class Analytics {
       "most_searched_planet"      -> getMostSearchedPlanet,
       "most_compared_pair"        -> getMostComparedPair
     )
+  }
+
+  /** Gets the dashboard string in the format expected by WebServer.scala */
+  def getDashboard: String = {
+    val stats = getStats
+    s"""Analytics Dashboard
+=================
+Total Interactions: ${stats("total_interactions")}
+Most Used Command: ${stats("most_used_command")}
+Quizzes Started: ${stats("quizzes_started")}
+Questions Answered: ${stats("quiz_questions_answered")}
+Quiz Success Rate: ${stats("quiz_success_rate")}
+Most Searched Planet: ${stats("most_searched_planet")}
+Most Compared Pair: ${stats("most_compared_pair")}
+================="""
   }
 
   /** Gets the most commonly used command
@@ -229,48 +241,5 @@ class Analytics {
   private def isPlanet(topic: String): Boolean = {
     val planets = Set("mars", "jupiter", "saturn", "uranus", "neptune", "venus", "mercury", "earth", "pluto")
     planets.contains(topic.toLowerCase)
-=======
-  def logInteraction(command: String): Unit = {
-    totalInteractions += 1
-    commandCounts = commandCounts.updated(command, commandCounts.getOrElse(command, 0) + 1)
-    if (command.startsWith("askabout_")) {
-      val planet = command.drop("askabout_".length).capitalize
-      planetSearches = planetSearches.updated(planet, planetSearches.getOrElse(planet, 0) + 1)
-    } else if (command.startsWith("compare_")) {
-      val parts = command.drop("compare_".length).split("_")
-      if (parts.length >= 2) {
-        val pair = (parts(0).capitalize, parts(1).capitalize)
-        comparisonPairs = comparisonPairs.updated(pair, comparisonPairs.getOrElse(pair, 0) + 1)
-      }
-    }
-  }
-
-  def logQuizStart(): Unit = {
-    quizzesStarted += 1
-  }
-
-  def logQuizAnswer(correct: Boolean): Unit = {
-    questionsAnswered += 1
-    if (correct) correctAnswers += 1
-  }
-
-  def getDashboard: String = {
-    val mostUsedCommand    = commandCounts.maxByOption(_._2).map(_._1).getOrElse("None")
-    val mostSearchedPlanet = planetSearches.maxByOption(_._2).map(_._1).getOrElse("None")
-    val mostComparedPair =
-      comparisonPairs.maxByOption(_._2).map { case ((p1, p2), _) => s"$p1 vs $p2" }.getOrElse("None")
-    val successRate = if (questionsAnswered > 0) (correctAnswers.toDouble / questionsAnswered * 100).toInt else 0
-
-    s"""Analytics Dashboard
-=================
-Total Interactions: $totalInteractions
-Most Used Command: $mostUsedCommand
-Quizzes Started: $quizzesStarted
-Questions Answered: $questionsAnswered
-Quiz Success Rate: $successRate%
-Most Searched Planet: $mostSearchedPlanet
-Most Compared Pair: $mostComparedPair
-================="""
->>>>>>> Stashed changes
   }
 }

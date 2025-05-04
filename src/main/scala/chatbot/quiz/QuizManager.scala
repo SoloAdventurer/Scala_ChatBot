@@ -146,4 +146,12 @@ class QuizManager {
   def isQuizActive(): Boolean = {
     questions.nonEmpty && currentIndex < questions.length
   }
+
+  def getCurrentQuestionIndex(): Int = {
+    currentIndex
+  }
+
+  def getTotalQuestions(): Int = {
+    totalQuestions
+  }
 }
