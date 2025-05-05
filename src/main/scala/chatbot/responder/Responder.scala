@@ -13,7 +13,7 @@ class Responder(dataSource: AstronomyData, analytics: Analytics, quizManager: Qu
     "Hi! What would you like to know about space?",
     "Welcome! Ask me anything about the universe!",
     "Hey there! Ready to explore the stars?",
-    "Greetings, space traveler! What’s on your mind?"
+    "Greetings, space traveler! What's on your mind?"
   )
 
   private val helpMessages = List(
