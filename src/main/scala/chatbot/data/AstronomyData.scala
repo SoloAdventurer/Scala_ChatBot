@@ -1,10 +1,11 @@
 package chatbot.data
 
-import chatbot.config.Config
 import io.circe._
 import io.circe.generic.semiauto._
 import io.circe.parser._
+import chatbot.config.Config
 
+// Case class remains unchanged
 case class CelestialObject(
   name: String,
   `type`: String,
@@ -24,12 +25,12 @@ case class CelestialObject(
 )
 
 object CelestialObject {
-  // Circe decoders/encoders
   implicit val decoder: Decoder[CelestialObject] = deriveDecoder[CelestialObject]
   implicit val encoder: Encoder[CelestialObject] = deriveEncoder[CelestialObject]
 }
 
-class AstronomyData(config: Config) {
+object AstronomyData {
+  // Fallback data as a pure value
   private val fallbackData: List[CelestialObject] = List(
     CelestialObject(
       name = "Mercury",
@@ -64,45 +65,42 @@ class AstronomyData(config: Config) {
     )
   )
 
-  private val objects: List[CelestialObject] = parseAstronomyData()
-
-  private def parseAstronomyData(): List[CelestialObject] = {
+  // Pure function to parse astronomy data
+  def parseAstronomyData(config: Config): List[CelestialObject] = {
     if (config.dataContent.isEmpty) {
       println("Warning: Empty data content, using fallback data")
-      return fallbackData
-    }
+      fallbackData
+    } else {
+      // Trim the data content to show a preview
+      val previewLength = Math.min(200, config.dataContent.length)
+      val preview = config.dataContent.take(previewLength) +
+        (if (config.dataContent.length > previewLength) "..." else "")
+      println(s"JSON content: $preview")
 
-    // Trim the data content to show a preview
-    val previewLength = Math.min(200, config.dataContent.length)
-    val preview =
-      config.dataContent.take(previewLength) + (if (config.dataContent.length > previewLength) "..." else "")
-    println(s"JSON content: $preview")
-
-    // Try to parse the JSON with Circe
-    decode[List[CelestialObject]](config.dataContent) match {
-      case Right(parsed) =>
-        println(s"Successfully parsed ${parsed.length} celestial objects")
-        parsed
-      case Left(error) =>
-        println(s"Failed to parse astronomy.json: ${error.getMessage}, using fallback data")
-
-        // More detailed error reporting
-        error match {
-          case ParsingFailure(msg, underlying) =>
-            println(s"JSON parsing error: $msg")
-            println(s"Underlying exception: ${underlying.getMessage}")
-          case DecodingFailure(msg, history) =>
-            println(s"JSON decoding error: $msg")
-            println(s"Error path: ${history.mkString(" -> ")}")
-          case other =>
-            println(s"Unexpected error: ${other.getMessage}")
-        }
-
-        fallbackData
+      // Parse JSON with Circe using pattern matching
+      decode[List[CelestialObject]](config.dataContent) match {
+        case Right(parsed) =>
+          println(s"Successfully parsed ${parsed.length} celestial objects")
+          parsed
+        case Left(error) =>
+          println(s"Failed to parse astronomy.json: ${error.getMessage}, using fallback data")
+          error match {
+            case ParsingFailure(msg, underlying) =>
+              println(s"JSON parsing error: $msg")
+              println(s"Underlying exception: ${underlying.getMessage}")
+            case DecodingFailure(msg, history) =>
+              println(s"JSON decoding error: $msg")
+              println(s"Error path: ${history.mkString(" -> ")}")
+            case other =>
+              println(s"Unexpected error: ${other.getMessage}")
+          }
+          fallbackData
+      }
     }
   }
 
-  def getFacts(topic: String): Option[Map[String, String]] = {
+  // Pure function to get facts for a topic
+  def getFacts(objects: List[CelestialObject], topic: String): Option[Map[String, String]] = {
     objects.find(_.name.toLowerCase == topic.toLowerCase).map { obj =>
       Map(
         "diameter"            -> obj.diameter,
@@ -122,16 +120,19 @@ class AstronomyData(config: Config) {
     }
   }
 
-  def getPlanets: List[String] = {
+  // Pure function to get planet names
+  def getPlanets(objects: List[CelestialObject]): List[String] = {
     objects.filter(_.`type` == "planet").map(_.name)
   }
 
-  def getAllObjects: List[CelestialObject] = objects
+  // Pure function to get all objects
+  def getAllObjects(objects: List[CelestialObject]): List[CelestialObject] = objects
 
-  def getObjectsByType(objectType: String): List[CelestialObject] = {
+  // Pure function to get objects by type
+  def getObjectsByType(objects: List[CelestialObject], objectType: String): List[CelestialObject] = {
     objects.filter(_.`type`.toLowerCase == objectType.toLowerCase)
   }
 
-  // Check if the data was loaded successfully from the original source
-  def isUsingFallbackData: Boolean = objects eq fallbackData
+  // Pure function to check if using fallback data
+  def isUsingFallbackData(objects: List[CelestialObject]): Boolean = objects == fallbackData
 }

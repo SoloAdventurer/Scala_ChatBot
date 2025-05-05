@@ -2,72 +2,93 @@ package chatbot.analytics
 
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import scala.collection.mutable
 
-/** Enhanced Analytics for tracking comprehensive user interaction with the chatbot */
-class Analytics {
-  private var totalInteractions = 0
-  private var commandCounts     = Map[String, Int]()
-  private var quizzesStarted    = 0
-  private var questionsAnswered = 0
-  private var correctAnswers    = 0
-  private var planetSearches    = Map[String, Int]()
-  private var comparisonPairs   = Map[(String, String), Int]()
-
-  // New analytics features
-  private var sessionDurations: mutable.ListBuffer[Long]          = mutable.ListBuffer.empty // in seconds
-  private var interactionTimes: mutable.ListBuffer[LocalDateTime] = mutable.ListBuffer.empty
-  private var quizStats: Map[String, Int] = Map(
-    "quizzes_started"    -> 0,
-    "questions_answered" -> 0,
-    "correct_answers"    -> 0
+/** Pure functional analytics module for tracking user interaction with the chatbot */
+object Analytics {
+  // Define our state type
+  type AnalyticsState = (
+    Int,                        // totalInteractions
+    Map[String, Int],           // commandCounts
+    Map[String, Int],           // quizStats
+    Map[String, Int],           // topSearchedPlanets
+    Map[(String, String), Int], // topComparedPairs
+    Int,                        // consecutiveInteractions
+    Int,                        // maxConsecutiveInteractions
+    LocalDateTime,              // lastInteractionTime
+    List[LocalDateTime],        // interactionTimes
+    List[Long]                  // sessionDurations
   )
-  private var topSearchedPlanets: Map[String, Int]         = Map.empty
-  private var topComparedPairs: Map[(String, String), Int] = Map.empty
-  private var consecutiveInteractions: Int                 = 0
-  private var maxConsecutiveInteractions: Int              = 0
 
-  // Time of last interaction for measuring engagement
-  private var lastInteractionTime: LocalDateTime = LocalDateTime.now()
+  // Create initial state
+  def initialState: AnalyticsState = (
+    0,                      // totalInteractions
+    Map.empty[String, Int], // commandCounts
+    Map(
+      "quizzes_started"    -> 0,
+      "questions_answered" -> 0,
+      "correct_answers"    -> 0
+    ),                                // quizStats
+    Map.empty[String, Int],           // topSearchedPlanets
+    Map.empty[(String, String), Int], // topComparedPairs
+    0,                                // consecutiveInteractions
+    0,                                // maxConsecutiveInteractions
+    LocalDateTime.now(),              // lastInteractionTime
+    List.empty[LocalDateTime],        // interactionTimes
+    List.empty[Long]                  // sessionDurations
+  )
 
-  /** Logs a user interaction with the chatbot
+  /** Logs a user interaction, returning a new state
+    * @param state
+    *   Current analytics state
     * @param command
     *   The command string issued by the user
     * @param isCorrectQuizAnswer
     *   Optional parameter to track quiz performance
+    * @return
+    *   Updated analytics state
     */
-  def logInteraction(command: String, isCorrectQuizAnswer: Boolean = false): Unit = {
-    totalInteractions += 1
+  def logInteraction(state: AnalyticsState, command: String, isCorrectQuizAnswer: Boolean = false): AnalyticsState = {
+    val (
+      totalInteractions,
+      commandCounts,
+      quizStats,
+      topSearchedPlanets,
+      topComparedPairs,
+      _, // consecutiveInteractions (will be recalculated)
+      maxConsecutiveInteractions,
+      lastInteractionTime,
+      interactionTimes,
+      sessionDurations
+    ) = state
+
     val now = LocalDateTime.now()
 
     // Track time between interactions
     val timeSinceLastInteraction = java.time.Duration.between(lastInteractionTime, now).getSeconds
-    if (timeSinceLastInteraction < 300) { // 5 minutes threshold for consecutive interactions
-      consecutiveInteractions += 1
-      maxConsecutiveInteractions = Math.max(maxConsecutiveInteractions, consecutiveInteractions)
-    } else {
-      consecutiveInteractions = 1
-    }
-
-    // Update last interaction time
-    lastInteractionTime = now
-    interactionTimes += now
+    val (newConsecutiveInteractions, newMaxConsecutiveInteractions) =
+      if (timeSinceLastInteraction < 300) { // 5 minutes threshold for consecutive interactions
+        val consecutiveCount = state._6 + 1
+        (consecutiveCount, Math.max(maxConsecutiveInteractions, consecutiveCount))
+      } else {
+        (1, maxConsecutiveInteractions)
+      }
 
     // Update command frequency
-    commandCounts = commandCounts.updated(
-      command.split("_").headOption.getOrElse("unknown"),
-      commandCounts.getOrElse(command.split("_").headOption.getOrElse("unknown"), 0) + 1
-    )
+    val commandType          = command.split("_").headOption.getOrElse("unknown")
+    val updatedCommandCounts = commandCounts.updated(commandType, commandCounts.getOrElse(commandType, 0) + 1)
 
-    // Log specific command types
-    command match {
+    // Process command-specific updates using pattern matching
+    val (updatedTopSearchedPlanets, updatedTopComparedPairs, updatedQuizStats) = command match {
       case cmd if cmd.startsWith("askabout_") =>
         val topic = cmd.drop("askabout_".length).toLowerCase
         if (isPlanet(topic)) {
-          topSearchedPlanets = topSearchedPlanets.updated(
-            topic,
-            topSearchedPlanets.getOrElse(topic, 0) + 1
+          (
+            topSearchedPlanets.updated(topic, topSearchedPlanets.getOrElse(topic, 0) + 1),
+            topComparedPairs,
+            quizStats
           )
+        } else {
+          (topSearchedPlanets, topComparedPairs, quizStats)
         }
 
       case cmd if cmd.startsWith("compare_") =>
@@ -76,57 +97,111 @@ class Analytics {
           val topic1 = parts(0).toLowerCase
           val topic2 = parts(1).toLowerCase
           val pair   = if (topic1 < topic2) (topic1, topic2) else (topic2, topic1)
-          topComparedPairs = topComparedPairs.updated(
-            pair,
-            topComparedPairs.getOrElse(pair, 0) + 1
+          (
+            topSearchedPlanets,
+            topComparedPairs.updated(pair, topComparedPairs.getOrElse(pair, 0) + 1),
+            quizStats
           )
+        } else {
+          (topSearchedPlanets, topComparedPairs, quizStats)
         }
 
       case "startquiz" =>
-        quizStats = quizStats.updated(
-          "quizzes_started",
-          quizStats("quizzes_started") + 1
+        (
+          topSearchedPlanets,
+          topComparedPairs,
+          quizStats.updated("quizzes_started", quizStats("quizzes_started") + 1)
         )
 
       case cmd if cmd.startsWith("answerquiz_") =>
-        quizStats = quizStats.updated(
+        val updatedAnsweredStats = quizStats.updated(
           "questions_answered",
           quizStats("questions_answered") + 1
         )
-        if (isCorrectQuizAnswer) {
-          quizStats = quizStats.updated(
+
+        val finalQuizStats = if (isCorrectQuizAnswer) {
+          updatedAnsweredStats.updated(
             "correct_answers",
-            quizStats("correct_answers") + 1
+            updatedAnsweredStats("correct_answers") + 1
           )
+        } else {
+          updatedAnsweredStats
         }
 
-      case _ => // No special handling for other commands
+        (topSearchedPlanets, topComparedPairs, finalQuizStats)
+
+      case _ =>
+        (topSearchedPlanets, topComparedPairs, quizStats)
     }
 
-    // In a real implementation, you might want to log this to a file or database
+    // Log in a real implementation
     val timestamp = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
     println(s"[DEBUG] $timestamp: User issued command: $command")
+
+    // Return new state
+    (
+      totalInteractions + 1,
+      updatedCommandCounts,
+      updatedQuizStats,
+      updatedTopSearchedPlanets,
+      updatedTopComparedPairs,
+      newConsecutiveInteractions,
+      newMaxConsecutiveInteractions,
+      now,
+      now :: interactionTimes,
+      sessionDurations
+    )
   }
 
-  /** Records the end of a user session Useful for tracking how long users typically engage with the chatbot
+  /** Records the end of a user session, returning a new state
+    * @param state
+    *   Current analytics state
+    * @return
+    *   Updated analytics state
     */
-  def endSession(): Unit = {
-    val sessionDuration = java.time.Duration.between(lastInteractionTime, LocalDateTime.now()).getSeconds
-    sessionDurations += sessionDuration
+  def endSession(state: AnalyticsState): AnalyticsState = {
+    val sessionDuration = java.time.Duration.between(state._8, LocalDateTime.now()).getSeconds
+    (
+      state._1,                    // totalInteractions
+      state._2,                    // commandCounts
+      state._3,                    // quizStats
+      state._4,                    // topSearchedPlanets
+      state._5,                    // topComparedPairs
+      state._6,                    // consecutiveInteractions
+      state._7,                    // maxConsecutiveInteractions
+      state._8,                    // lastInteractionTime
+      state._9,                    // interactionTimes
+      sessionDuration :: state._10 // sessionDurations
+    )
   }
 
   /** Gets comprehensive statistics about user interactions
+    * @param state
+    *   Current analytics state
     * @return
     *   Map containing detailed usage statistics
     */
-  def getStats: Map[String, String] = {
+  def getStats(state: AnalyticsState): Map[String, String] = {
+    val (
+      totalInteractions,
+      commandCounts,
+      quizStats,
+      topSearchedPlanets,
+      topComparedPairs,
+      _,
+      maxConsecutiveInteractions,
+      _,
+      interactionTimes,
+      _
+    ) = state
+
     val runTime = java.time.Duration.between(LocalDateTime.now(), LocalDateTime.now())
     val hours   = runTime.toHours
     val minutes = runTime.toMinutesPart
 
     // Calculate engagement metrics
-    val avgTimeBetweenCommands = calculateAverageTimeBetweenCommands()
-    val peakUsageHour          = calculatePeakUsageHour()
+    val avgTimeBetweenCommands = calculateAverageTimeBetweenCommands(interactionTimes)
+    val peakUsageHour          = calculatePeakUsageHour(interactionTimes)
     val quizCompletionRate =
       if (quizStats("quizzes_started") > 0)
         quizStats("questions_answered").toDouble / quizStats("quizzes_started")
@@ -139,7 +214,7 @@ class Analytics {
     Map(
       "total_interactions"        -> totalInteractions.toString,
       "runtime"                   -> f"${hours}h ${minutes}m",
-      "most_used_command"         -> getMostUsedCommand,
+      "most_used_command"         -> getMostUsedCommand(commandCounts),
       "command_frequencies"       -> commandCounts.toString,
       "longest_engagement_streak" -> maxConsecutiveInteractions.toString,
       "avg_time_between_commands" -> f"${avgTimeBetweenCommands}%.1f seconds",
@@ -148,14 +223,19 @@ class Analytics {
       "quiz_questions_answered"   -> quizStats("questions_answered").toString,
       "quiz_completion_rate"      -> f"${quizCompletionRate}%.2f questions per quiz",
       "quiz_success_rate"         -> f"${quizSuccessRate}%.1f%%",
-      "most_searched_planet"      -> getMostSearchedPlanet,
-      "most_compared_pair"        -> getMostComparedPair
+      "most_searched_planet"      -> getMostSearchedPlanet(topSearchedPlanets),
+      "most_compared_pair"        -> getMostComparedPair(topComparedPairs)
     )
   }
 
-  /** Gets the dashboard string in the format expected by WebServer.scala */
-  def getDashboard: String = {
-    val stats = getStats
+  /** Gets the dashboard string in the format expected by WebServer
+    * @param state
+    *   Current analytics state
+    * @return
+    *   Formatted dashboard string
+    */
+  def getDashboard(state: AnalyticsState): String = {
+    val stats = getStats(state)
     s"""Analytics Dashboard
 =================
 Total Interactions: ${stats("total_interactions")}
@@ -168,11 +248,9 @@ Most Compared Pair: ${stats("most_compared_pair")}
 ================="""
   }
 
-  /** Gets the most commonly used command
-    * @return
-    *   String representing the most used command
-    */
-  private def getMostUsedCommand: String = {
+  /** Helper functions */
+
+  private def getMostUsedCommand(commandCounts: Map[String, Int]): String = {
     if (commandCounts.isEmpty) {
       "None"
     } else {
@@ -180,11 +258,7 @@ Most Compared Pair: ${stats("most_compared_pair")}
     }
   }
 
-  /** Gets the most searched planet
-    * @return
-    *   String representing the most searched planet
-    */
-  private def getMostSearchedPlanet: String = {
+  private def getMostSearchedPlanet(topSearchedPlanets: Map[String, Int]): String = {
     if (topSearchedPlanets.isEmpty) {
       "None"
     } else {
@@ -192,11 +266,7 @@ Most Compared Pair: ${stats("most_compared_pair")}
     }
   }
 
-  /** Gets the most compared planet pair
-    * @return
-    *   String representing the most compared pair
-    */
-  private def getMostComparedPair: String = {
+  private def getMostComparedPair(topComparedPairs: Map[(String, String), Int]): String = {
     if (topComparedPairs.isEmpty) {
       "None"
     } else {
@@ -205,39 +275,25 @@ Most Compared Pair: ${stats("most_compared_pair")}
     }
   }
 
-  /** Calculates the average time between commands in seconds
-    * @return
-    *   Double representing average time in seconds
-    */
-  private def calculateAverageTimeBetweenCommands(): Double = {
-    if (interactionTimes.size < 2) return 0.0
+  private def calculateAverageTimeBetweenCommands(interactionTimes: List[LocalDateTime]): Double = {
+    val sortedTimes = interactionTimes.sortBy(_.toEpochSecond(java.time.ZoneOffset.UTC))
+    if (sortedTimes.size < 2) return 0.0
 
-    var totalSeconds = 0.0
-    for (i <- 1 until interactionTimes.size) {
-      val duration = java.time.Duration.between(interactionTimes(i - 1), interactionTimes(i)).getSeconds
-      totalSeconds += duration
-    }
+    val timePairs = sortedTimes.zip(sortedTimes.tail)
+    val totalSeconds = timePairs.map { case (t1, t2) =>
+      java.time.Duration.between(t1, t2).abs().getSeconds.toDouble
+    }.sum
 
-    totalSeconds / (interactionTimes.size - 1)
+    totalSeconds / timePairs.size
   }
 
-  /** Determines the hour of day with most interactions
-    * @return
-    *   Int representing hour (0-23)
-    */
-  private def calculatePeakUsageHour(): Int = {
+  private def calculatePeakUsageHour(interactionTimes: List[LocalDateTime]): Int = {
     if (interactionTimes.isEmpty) return 0
 
     val hourCounts = interactionTimes.groupBy(_.getHour).map { case (hour, times) => (hour, times.size) }
     if (hourCounts.isEmpty) 0 else hourCounts.maxBy(_._2)._1
   }
 
-  /** Checks if a topic is a planet
-    * @param topic
-    *   The topic to check
-    * @return
-    *   Boolean indicating if the topic is a planet
-    */
   private def isPlanet(topic: String): Boolean = {
     val planets = Set("mars", "jupiter", "saturn", "uranus", "neptune", "venus", "mercury", "earth", "pluto")
     planets.contains(topic.toLowerCase)
