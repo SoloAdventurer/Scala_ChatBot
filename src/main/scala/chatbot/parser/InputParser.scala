@@ -1,30 +1,122 @@
 package chatbot.parser
 
-object InputParser {
-  // Define command types as string constants
-  val CMD_UNKNOWN       = "UNKNOWN"
-  val CMD_HELP          = "HELP"
-  val CMD_LIST_PLANETS  = "LIST_PLANETS"
-  val CMD_LIST_CATEGORY = "LIST_CATEGORY"
-  val CMD_RANDOM_FACT   = "RANDOM_FACT"
-  val CMD_START_QUIZ    = "START_QUIZ"
-  val CMD_ANSWER_QUIZ   = "ANSWER_QUIZ"
-  val CMD_ASK_ABOUT     = "ASK_ABOUT"
-  val CMD_COMPARE       = "COMPARE"
-  val CMD_EXIT_QUIZ     = "EXIT_QUIZ"
-  val CMD_SKIP_QUESTION = "SKIP_QUESTION"
-  val CMD_GREETINGS     = "GREETINGS"
+import scala.util.Random
+import scala.util.matching.Regex
 
-  // Word lists for pattern matching
-  val helpWords     = Set("help", "commands", "guide", "instructions")
-  val listWords     = Set("list", "show", "display", "name", "what")
-  val factWords     = Set("fact", "trivia", "interesting", "random", "cool", "fun")
-  val quizWords     = Set("quiz", "trivia", "test", "challenge", "game")
-  val compareWords  = Set("compare", "difference", "versus", "vs", "between", "against")
-  val exitWords     = Set("exit", "quit", "stop", "end")
-  val greetingWords = Set("hello", "hi", "hey", "greetings", "yo")
-  val planets       = Set("mars", "jupiter", "saturn", "uranus", "neptune", "venus", "mercury", "earth", "pluto")
-  val categories = Set(
+class InputParser {
+  private val CMD_UNKNOWN       = "UNKNOWN"
+  private val CMD_HELP          = "HELP"
+  private val CMD_LIST_PLANETS  = "LIST_PLANETS"
+  private val CMD_LIST_CATEGORY = "LIST_CATEGORY"
+  private val CMD_RANDOM_FACT   = "RANDOM_FACT"
+  private val CMD_START_QUIZ    = "START_QUIZ"
+  private val CMD_ANSWER_QUIZ   = "ANSWER_QUIZ"
+  private val CMD_ASK_ABOUT     = "ASK_ABOUT"
+  private val CMD_COMPARE       = "COMPARE"
+  private val CMD_BIGGER        = "BIGGER"
+  private val CMD_FEATURE       = "FEATURE"
+  private val CMD_EXIT_QUIZ     = "EXIT_QUIZ"
+  private val CMD_SKIP_QUESTION = "SKIP_QUESTION"
+  private val CMD_GREETINGS     = "GREETINGS"
+
+  case class CommandResponse(commandType: String, payload: String = "", extraPayload: String = "")
+
+  def parseInput(input: String, isQuizActive: Boolean = false): String = {
+    val normalizedInput = input.trim.toLowerCase
+    if (normalizedInput.isEmpty) return "unknown_empty"
+
+    val words = normalizedInput.split("\\s+").toList
+    val cmdResponse = if (isQuizActive) {
+      parseQuizMode(words, normalizedInput)
+    } else {
+      parseRegularMode(words, normalizedInput)
+    }
+
+    cmdResponse.commandType.toLowerCase match {
+      case "unknown"       => "unknown_" + cmdResponse.payload
+      case "help"          => "help"
+      case "list_planets"  => "listplanets"
+      case "list_category" => "listcategory_" + cmdResponse.payload
+      case "random_fact"   => "randomfact"
+      case "start_quiz"    => "startquiz"
+      case "answer_quiz"   => "answerquiz_" + cmdResponse.payload
+      case "ask_about"     => "askabout_" + cmdResponse.payload
+      case "compare"       => "compare_" + cmdResponse.payload + "_" + cmdResponse.extraPayload
+      case "bigger"        => "bigger_" + cmdResponse.payload + "_" + cmdResponse.extraPayload
+      case "feature"       => "feature_" + cmdResponse.payload + "_" + cmdResponse.extraPayload
+      case "exit_quiz"     => "exit"
+      case "skip_question" => "startquiz"
+      case "greetings"     => "greetings"
+      case _               => "unknown_" + normalizedInput
+    }
+  }
+
+  private def parseQuizMode(words: List[String], originalInput: String): CommandResponse = {
+    if (words.exists(exitWords.contains) && (words.contains("quiz") || words.length == 1)) {
+      CommandResponse(CMD_EXIT_QUIZ)
+    } else if (words.contains("skip")) {
+      CommandResponse(CMD_SKIP_QUESTION)
+    } else {
+      CommandResponse(CMD_ANSWER_QUIZ, originalInput)
+    }
+  }
+
+  private def parseRegularMode(words: List[String], originalInput: String): CommandResponse = {
+    if (matchesGreetings(words)) {
+      CommandResponse(CMD_GREETINGS)
+    } else if (matchesHelp(words)) {
+      CommandResponse(CMD_HELP)
+    } else if (matchesListPlanets(words)) {
+      CommandResponse(CMD_LIST_PLANETS)
+    } else if (matchesRandomFact(words)) {
+      CommandResponse(CMD_RANDOM_FACT)
+    } else if (matchesQuiz(words)) {
+      CommandResponse(CMD_START_QUIZ)
+    } else if (matchesFeature(originalInput)) {
+      extractFeature(originalInput) match {
+        case Some((topic, attr)) => CommandResponse(CMD_FEATURE, topic, attr)
+        case None                => CommandResponse(CMD_UNKNOWN, originalInput)
+      }
+    } else if (matchesCompare(originalInput)) {
+      extractCompareTopics(originalInput) match {
+        case Some((topic1, topic2)) => CommandResponse(CMD_COMPARE, topic1, topic2)
+        case None                   => CommandResponse(CMD_UNKNOWN, originalInput)
+      }
+    } else if (matchesBigger(originalInput)) {
+      extractCompareTopics(originalInput) match {
+        case Some((topic1, topic2)) => CommandResponse(CMD_BIGGER, topic1, topic2)
+        case None                   => CommandResponse(CMD_UNKNOWN, originalInput)
+      }
+    } else if (matchesCategory(words)) {
+      val foundCategory = categories
+        .find(cat =>
+          words.contains(cat) ||
+            (cat.contains(" ") && cat.split(" ").forall(words.contains))
+        )
+        .getOrElse("unknown")
+      CommandResponse(CMD_LIST_CATEGORY, foundCategory)
+    } else if (matchesPlanet(words)) {
+      val foundPlanet = planets
+        .find(planet => words.contains(planet))
+        .getOrElse("unknown")
+      CommandResponse(CMD_ASK_ABOUT, foundPlanet.capitalize)
+    } else {
+      val topic = extractTopic(originalInput)
+      if (topic.nonEmpty) CommandResponse(CMD_ASK_ABOUT, topic.capitalize)
+      else CommandResponse(CMD_UNKNOWN, originalInput)
+    }
+  }
+
+  private val helpWords     = Set("help", "commands", "guide", "instructions")
+  private val listWords     = Set("list", "show", "display", "name", "what")
+  private val factWords     = Set("fact", "trivia", "interesting", "random", "cool", "fun")
+  private val quizWords     = Set("quiz", "trivia", "test", "challenge", "game")
+  private val compareWords  = Set("compare", "difference", "versus", "vs", "between", "against")
+  private val biggerWords   = Set("bigger", "larger", "biggest", "largest")
+  private val exitWords     = Set("exit", "quit", "stop", "end")
+  private val greetingWords = Set("hello", "hi", "hey", "greetings", "yo")
+  private val planets = Set("mars", "jupiter", "saturn", "uranus", "neptune", "venus", "mercury", "earth", "pluto")
+  private val categories = Set(
     "stars",
     "constellations",
     "moons",
@@ -38,236 +130,107 @@ object InputParser {
     "exoplanets"
   )
 
-  // Parse user input and return a command string
-  def parseInput(input: String, isQuizActive: Boolean = false): String = {
-    val normalizedInput = input.trim.toLowerCase
-
-    // Handle empty input
-    if (normalizedInput.isEmpty) {
-      return "unknown_empty"
-    }
-
-    // Split input into words for easier pattern matching
-    val words = normalizedInput.split(" ").toList
-
-    // Process based on quiz mode
-    val (commandType, payload, extraPayload) = if (isQuizActive) {
-      parseQuizMode(words, normalizedInput)
-    } else {
-      parseRegularMode(words, normalizedInput)
-    }
-
-    // Convert the tuple to a string format expected by Responder
-    commandType.toLowerCase match {
-      case "unknown"       => "unknown_" + payload
-      case "help"          => "help"
-      case "list_planets"  => "listplanets"
-      case "list_category" => "listcategory_" + payload
-      case "random_fact"   => "randomfact"
-      case "start_quiz"    => "startquiz"
-      case "answer_quiz"   => "answerquiz_" + payload
-      case "ask_about"     => "askabout_" + payload
-      case "compare"       => "compare_" + payload + "_" + extraPayload
-      case "exit_quiz"     => "exit"
-      case "skip_question" => "startquiz" // Treat "skip" as moving to next question
-      case "greetings"     => "greetings"
-      case _               => "unknown_" + normalizedInput
-    }
+  private def matchesGreetings(words: List[String]): Boolean = {
+    val hasGreeting     = words.exists(greetingWords.contains)
+    val mentionsChaturn = words.contains("chaturn")
+    hasGreeting || mentionsChaturn
   }
 
-  // Parse input in quiz mode
-  def parseQuizMode(words: List[String], originalInput: String): (String, String, String) = {
-    // Check for quiz exit commands
-    if (words.exists(exitWords.contains) && (words.contains("quiz") || words.length == 1)) {
-      (CMD_EXIT_QUIZ, "", "")
-    } else if (words.contains("skip")) {
-      (CMD_SKIP_QUESTION, "", "")
-    } else {
-      // Default action in quiz mode is to treat as an answer
-      (CMD_ANSWER_QUIZ, originalInput, "")
-    }
-  }
-
-  // Parse input in regular mode
-  def parseRegularMode(words: List[String], originalInput: String): (String, String, String) = {
-    // Prioritize different command types
-    if (matchesGreetings(words)) {
-      (CMD_GREETINGS, "", "")
-    } else if (matchesHelp(words)) {
-      (CMD_HELP, "", "")
-    } else if (matchesListPlanets(words)) {
-      (CMD_LIST_PLANETS, "", "")
-    } else if (matchesRandomFact(words)) {
-      (CMD_RANDOM_FACT, "", "")
-    } else if (matchesQuiz(words)) {
-      (CMD_START_QUIZ, "", "")
-    } else if (matchesCompare(words)) {
-      extractCompareTopics(originalInput, words) match {
-        case (topic1, topic2) if topic1.nonEmpty && topic2.nonEmpty => (CMD_COMPARE, topic1, topic2)
-        case _                                                      => (CMD_UNKNOWN, originalInput, "")
-      }
-    } else if (matchesCategory(words)) {
-      val foundCategory = findCategory(words)
-      (CMD_LIST_CATEGORY, foundCategory, "")
-    } else if (matchesPlanet(words)) {
-      val foundPlanet = findPlanet(words)
-      (CMD_ASK_ABOUT, foundPlanet.capitalize, "")
-    } else {
-      // General ask about query
-      val topic = extractTopic(originalInput)
-      if (topic.nonEmpty) {
-        (CMD_ASK_ABOUT, topic.capitalize, "")
-      } else {
-        (CMD_UNKNOWN, originalInput, "")
-      }
-    }
-  }
-
-  // Pattern matching functions using string operations
-  def matchesGreetings(words: List[String]): Boolean = {
-    words.exists(greetingWords.contains) || words.contains("chaturn")
-  }
-
-  def matchesHelp(words: List[String]): Boolean = {
+  private def matchesHelp(words: List[String]): Boolean = {
     words.exists(helpWords.contains) ||
     (words.contains("what") && words.contains("can") && words.contains("you") && words.contains("do"))
   }
 
-  def matchesListPlanets(words: List[String]): Boolean = {
+  private def matchesListPlanets(words: List[String]): Boolean = {
     words.exists(listWords.contains) && words.contains("planets")
   }
 
-  def matchesRandomFact(words: List[String]): Boolean = {
-    (words.contains("random") && (words.contains("fact") || words.contains("trivia"))) ||
+  private def matchesRandomFact(words: List[String]): Boolean = {
+    (words.contains("random") && words.exists(w => w == "fact" || w == "trivia")) ||
     (words.exists(factWords.contains) && words.contains("fact")) ||
     (words.contains("surprise") && words.contains("me"))
   }
 
-  def matchesQuiz(words: List[String]): Boolean = {
-    words.exists(quizWords.contains) ||
-    (words.contains("test") && words.contains("knowledge"))
+  private def matchesQuiz(words: List[String]): Boolean = {
+    words.exists(quizWords.contains) || (words.contains("test") && words.contains("knowledge"))
   }
 
-  def matchesCompare(words: List[String]): Boolean = {
-    words.exists(compareWords.contains)
+  private def matchesCompare(input: String): Boolean = {
+    compareWords.exists(input.contains) || input.matches("(?i)compare\\s+between\\s+\\w+\\s+and\\s+\\w+.*")
   }
 
-  def matchesCategory(words: List[String]): Boolean = {
-    val foundCategory = categories.exists(cat => {
-      val catWords = cat.split(" ")
-      if (catWords.length == 1) {
-        words.contains(cat)
-      } else {
-        catWords.forall(words.contains)
-      }
-    })
-    (words.exists(listWords.contains) && foundCategory) || foundCategory
+  private def matchesBigger(input: String): Boolean = {
+    biggerWords.exists(input.contains) && input.contains(" or ") &&
+    input.matches("(?i).*which\\s+planet\\s+is\\s+(bigger|larger|biggest|largest)\\s+\\w+\\s+or\\s+\\w+.*")
   }
 
-  def matchesPlanet(words: List[String]): Boolean = {
-    planets.exists(words.contains)
+  private def matchesFeature(input: String): Boolean = {
+    input.matches("(?i)how\\s+(big|hot|cold|far|heavy|fast|long|dense)\\s+is\\s+\\w+.*")
   }
 
-  // Find the category mentioned in the input
-  def findCategory(words: List[String]): String = {
-    categories
-      .find(cat => {
-        val catWords = cat.split(" ")
-        if (catWords.length == 1) {
-          words.contains(cat)
-        } else {
-          catWords.forall(words.contains)
-        }
-      })
-      .getOrElse("unknown")
-  }
-
-  // Find the planet mentioned in the input
-  def findPlanet(words: List[String]): String = {
-    planets.find(words.contains).getOrElse("unknown")
-  }
-
-  // Extract comparison topics from input
-  def extractCompareTopics(input: String, words: List[String]): (String, String) = {
-    val separators = List("and", "vs", "versus", "to", "with", "against", "between", "from")
-
-    // First find which comparison word is used
-    val comparisonWord = compareWords.find(words.contains).getOrElse("")
-
-    if (comparisonWord.isEmpty) {
-      return ("", "")
-    }
-
-    // Find where in the input the comparison word appears
-    val compIndex = words.indexOf(comparisonWord)
-    if (compIndex == -1 || compIndex >= words.length - 1) {
-      return ("", "")
-    }
-
-    // Find which separator is used after the comparison word
-    val afterComp = words.drop(compIndex + 1)
-    val sepIndex  = afterComp.indexWhere(separators.contains)
-
-    if (sepIndex == -1 || sepIndex >= afterComp.length - 1) {
-      return ("", "")
-    }
-
-    // Extract the two topics
-    val firstPart  = afterComp.take(sepIndex).mkString(" ")
-    val secondPart = afterComp.drop(sepIndex + 1).mkString(" ")
-
-    (cleanTopic(firstPart), cleanTopic(secondPart))
-  }
-
-  // Clean a topic string by removing trailing punctuation
-  def cleanTopic(topic: String): String = {
-    val cleanedTopic = topic.trim
-    if (cleanedTopic.nonEmpty && "?!.,".contains(cleanedTopic.last)) {
-      cleanedTopic.init.trim
-    } else {
-      cleanedTopic
-    }
-  }
-
-  // Extract a topic from a general query
-  def extractTopic(input: String): String = {
-    // List of common prefixes to remove
-    val prefixes = List(
-      "tell me about ",
-      "what is ",
-      "what are ",
-      "who is ",
-      "where is ",
-      "tell me ",
-      "explain ",
-      "describe ",
-      "talk about ",
-      "can you tell me about ",
-      "i want to know about ",
-      "information about ",
-      "details about "
+  private def matchesCategory(words: List[String]): Boolean = {
+    categories.exists(cat =>
+      words.contains(cat) ||
+        (cat.contains(" ") && cat.split(" ").forall(words.contains))
     )
+  }
 
-    // Try to remove a matching prefix
-    val withoutPrefix = prefixes.foldLeft(input) { (currentInput, prefix) =>
-      if (currentInput.startsWith(prefix)) {
-        currentInput.substring(prefix.length)
-      } else {
-        currentInput
-      }
+  private def matchesPlanet(words: List[String]): Boolean = {
+    planets.exists(planet => words.contains(planet))
+  }
+
+  private def extractCompareTopics(input: String): Option[(String, String)] = {
+    val comparePattern =
+      "(?i)(?:compare\\s+between\\s+|compare\\s+|which\\s+planet\\s+is\\s+(?:bigger|larger|biggest|largest)\\s+)([\\w\\s]+?)\\s+(?:and|or|vs|versus|to|with|against|between)\\s+([\\w\\s]+?)\\s*[!?.]*$".r
+    comparePattern.findFirstMatchIn(input).map { m =>
+      val topic1 = m.group(1).trim.toLowerCase
+      val topic2 = m.group(2).trim.toLowerCase
+      (topic1, topic2)
     }
+  }
 
-    // Remove trailing punctuation
-    val withoutPunctuation = cleanTopic(withoutPrefix)
-
-    // Remove filler words at the beginning
-    val fillerWords = List("please ", "can you ", "could you ", "would you ")
-    fillerWords.foldLeft(withoutPunctuation) { (currentInput, filler) =>
-      if (currentInput.startsWith(filler)) {
-        currentInput.substring(filler.length)
-      } else {
-        currentInput
+  private def extractFeature(input: String): Option[(String, String)] = {
+    val featurePattern = "(?i)how\\s+(big|hot|cold|far|heavy|fast|long|dense)\\s+is\\s+([\\w\\s]+?)\\s*[!?.]*$".r
+    featurePattern.findFirstMatchIn(input).map { m =>
+      val attr = m.group(1).toLowerCase match {
+        case "big"          => "diameter"
+        case "hot" | "cold" => "surface_temperature"
+        case "far"          => "distance_from_sun"
+        case "heavy"        => "mass"
+        case "fast"         => "orbital_period"
+        case "long"         => "rotation_period"
+        case "dense"        => "composition"
       }
+      val topic = m.group(2).trim.toLowerCase
+      (topic, attr)
     }
+  }
+
+  private def extractTopic(input: String): String = {
+    val prefixes = List(
+      "tell me about",
+      "what is",
+      "what are",
+      "who is",
+      "where is",
+      "tell me",
+      "explain",
+      "describe",
+      "talk about",
+      "can you tell me about",
+      "i want to know about",
+      "information about",
+      "details about"
+    )
+    var cleaned = input
+    prefixes.foreach { prefix =>
+      if (cleaned.startsWith(prefix)) cleaned = cleaned.substring(prefix.length).trim
+    }
+    cleaned = cleaned.replaceAll("[?!.,]+$", "").trim
+    val fillerWords = List("please", "can you", "could you", "would you")
+    fillerWords.foreach { filler =>
+      if (cleaned.startsWith(filler)) cleaned = cleaned.substring(filler.length).trim
+    }
+    cleaned
   }
 }
